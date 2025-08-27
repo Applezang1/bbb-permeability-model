@@ -10,3 +10,12 @@
 
 ### Active, Passive Transport Proteins 
 <ins>Active and Passive Transport Proteins</ins>: Membrane proteins that are responsible for the facilitation of a specific molecule’s diffusion through the membrane. Active transporters require ATP to transport molecules while passive transporters don’t require ATP and transport molecules through non-energy processes such as diffusion through concentration gradients.
+
+### Receptors 
+<ins>Receptors</ins>: Proteins located on the endothelial cell’s membranes whose function is to bind to ligands found in the capillary. The receptors are activated by the ligand and activate a protein that causes a biological response (such as the increased production of certain proteins).
+
+## Between Endothelial Cells: 
+### Tight Junctions 
+<ins>Tight Junctions</ins>: Primarily made of occludins and claudin, responsible for attaching neighboring endothelial cells together.
+<ins>Function</ins>: Regulates the entering and exiting of substances and molecules by disabling the ability for molecules to enter the brain through gaps between adjacent endothelial cells 
+ 
