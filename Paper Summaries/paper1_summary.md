@@ -29,33 +29,55 @@
 <ins>Reference Papers</ins>: Find articles and papers containing BBB permeability and/or logBB information for each molecular compound
 
 <ins>Extract Data from File</ins>:
+
     - If the document is a PDF: 
+
         - Use tabula-py to convert the PDF data into a list of pandas DataFrames, which can be stored in Excel XLSX 
+
         - Convert data into float64 to ensure numerical operations
+
     - DOCX, DOC, CSV, TXT… any Excel-compatible format: 
+
         - Convert to Excel XLSX directly using Microsoft Office
 
 <ins>Revising and Cleaning Data</ins>:
+
     - <ins>Fix invalid SMILES</ins>: Remove white spaces or line breaks from the SMILES string to create a valid SMILES string 
-    - <ins>Add PubChem CID</ins>: Molecules that are missing identifiers, such as the SMILES string, PubChem CID, and compound name, can be found by inputting given information to PubChemPy, a public NIH database with chemical information.  
+
+    - <ins>Add PubChem CID</ins>: Molecules that are missing identifiers, such as the SMILES string, PubChem CID, and compound name, can be found by inputting given information to PubChemPy, a public NIH database with chemical information.
+
     - <ins>Other Potential Issues</ins>:
+
         - <ins>Problem</ins>: Compound name is marked with multiple PubChem instances, resulting in ambiguity. 
-            - <ins>Fix</ins>: Put a flag and mark for potential ambiguity  
+
+            - <ins>Fix</ins>: Put a flag and mark for potential ambiguity 
+
         - <ins>Problem</ins>: Only the molecular structure is given. 
+
             - <ins>Fix</ins>: Use the PubChem interface to build the molecule and search for the PubChem CID and SMILES string. 
+
         - <ins>Note</ins>: SMILES string checked for validity by loading into RdKit 
 
 <ins>Add Isomeric/Canonical SMILES</ins>: 
+
     - <ins>Problem</ins>: Normal SMILES strings don’t have stereochemical information, which influences the permeability of the specific compound through the BBB membrane 
+
     - <ins>Solution</ins>: Use PUG-REST API to get isomeric SMILES using normal SMILES, or use PubChemPy to get canonical SMILES if isomeric isn’t available 
 
 <ins>ChEMBL Structure Pipeline</ins>:
+
     - Run SMILES through the ChEMBL Structure Pipeline, which cleans up the SMILES string by:
+
         - Striping salts 
+
         - Neutralizing the charge 
+
         - Removing molecules containing metal atoms or heavy atoms with an atomic number greater than 20  
+
         - Updating valence electrons 
+
         - And more… 
 
 <ins>Reupdate PubChem CID</ins>: 
+
     - ChEMBL Structure Pipeline outputs a canonical or isomeric SMILES that can be different from the original, so use PubChemPy to update all the information again and store it.
