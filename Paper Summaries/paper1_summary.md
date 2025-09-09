@@ -42,27 +42,34 @@
 
 <ins>Revising and Cleaning Data</ins>:
 
-    - <ins>Fix invalid SMILES</ins>: Remove white spaces or line breaks from the SMILES string to create a valid SMILES string 
+    - Fix invalid SMILES: Remove white spaces or line breaks from the SMILES string 
+    to create a valid SMILES string 
 
-    - <ins>Add PubChem CID</ins>: Molecules that are missing identifiers, such as the SMILES string, PubChem CID, and compound name, can be found by inputting given information to PubChemPy, a public NIH database with chemical information.
+    - Add PubChem CID: Molecules that are missing identifiers, such as the SMILES string, 
+    PubChem CID, and compound name, can be found by inputting given information to 
+    PubChemPy, a public NIH database with chemical information.
 
-    - <ins>Other Potential Issues</ins>:
+    - Other Potential Issues:
 
-        - <ins>Problem</ins>: Compound name is marked with multiple PubChem instances, resulting in ambiguity. 
+        - Problem: Compound name is marked with multiple PubChem instances, resulting 
+        in ambiguity. 
 
-            - <ins>Fix</ins>: Put a flag and mark for potential ambiguity 
+            - Fix: Put a flag and mark for potential ambiguity 
 
-        - <ins>Problem</ins>: Only the molecular structure is given. 
+        - Problem: Only the molecular structure is given. 
 
-            - <ins>Fix</ins>: Use the PubChem interface to build the molecule and search for the PubChem CID and SMILES string. 
+            - Fix: Use the PubChem interface to build the molecule and search for 
+            the PubChem CID and SMILES string. 
 
-        - <ins>Note</ins>: SMILES string checked for validity by loading into RdKit 
+        - Note: SMILES string checked for validity by loading into RdKit 
 
 <ins>Add Isomeric/Canonical SMILES</ins>: 
 
-    - <ins>Problem</ins>: Normal SMILES strings don’t have stereochemical information, which influences the permeability of the specific compound through the BBB membrane 
+    - Problem: Normal SMILES strings don’t have stereochemical information, which influences 
+    the permeability of the specific compound through the BBB membrane 
 
-    - <ins>Solution</ins>: Use PUG-REST API to get isomeric SMILES using normal SMILES, or use PubChemPy to get canonical SMILES if isomeric isn’t available 
+    - Solution: Use PUG-REST API to get isomeric SMILES using normal SMILES, or use PubChemPy to get 
+    canonical SMILES if isomeric isn’t available 
 
 <ins>ChEMBL Structure Pipeline</ins>:
 
@@ -80,4 +87,5 @@
 
 <ins>Reupdate PubChem CID</ins>: 
 
-    - ChEMBL Structure Pipeline outputs a canonical or isomeric SMILES that can be different from the original, so use PubChemPy to update all the information again and store it.
+    - ChEMBL Structure Pipeline outputs a canonical or isomeric SMILES that can be different from the original, so use PubChemPy 
+    to update all the information again and store it.
