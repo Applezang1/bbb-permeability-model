@@ -89,3 +89,44 @@
 
     - ChEMBL Structure Pipeline outputs a canonical or isomeric SMILES that can be different from the original, so use PubChemPy 
     to update all the information again and store it.
+
+<ins>Data Curation</ins> 
+
+    - Problem: InChI is unique molecularly, but can’t resolve tautomeric form (same molecules but different structure)
+
+    - Solution: Use a unique InChI (generated with RdKit) and isomeric/canonical SMILES (which distinguishes differences in 
+    stereochemical information) for a unique chemical identifier. 
+    
+<ins>Data Curation</ins>: Filtering and Grouping Data
+
+    - Remove molecules with logBB values that are outliers (based on the distribution of logBB values)  
+    
+    - Check molecules where their logBB value was reported multiple times in multiple papers. Remove molecules where the 
+    reported data are significantly different from each other (Equation for Determining Significance: max(logBB) - min(logBB) > 1)
+
+    - Grouping Molecular Compounds:
+
+        - Group A: Molecules with one unique logBB value 
+
+        - Group B: Molecules with more than one logBB value, where each reported logBB value has 
+        a difference of less than 5% from the mean logBB value 
+
+        - Group C: Molecules with two distinct logBB values 
+
+        - Group D: Molecule with more than two distinct logBB values, the highest frequency logBB value 
+        is chosen as the value to use  
+
+        - Discard molecules that fail to be grouped 
+
+    - Grouping Categorical Data: 
+
+        - Group A: Molecules with numerical data with different logBB threshold values used for different papers 
+
+        - Group B: Molecules whose BBB permeability is quantified by a threshold value of logBB = -1 and 
+        have the same reported permeability result from multiple sources
+
+        - Group C: Molecules with no threshold value for BBB permeability, but have the same reported
+        permeability result from multiple sources 
+
+        - Group D: Molecules with different reported permeability results. The most frequent permeability result 
+        is chosen to represent the molecule, and any molecule with an equal number of both permeability results is discarded. 
