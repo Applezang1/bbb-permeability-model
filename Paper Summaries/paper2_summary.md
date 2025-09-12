@@ -39,3 +39,40 @@
 <ins>RF(PCP) (Random Forest with Physiochemical Properties)</ins>: a type of model that takes physiochemical (physical + chemical) properties of a molecule as inputs to predict other properties of a molecule
 
 <ins>MLP(PCP) (Multi-Layer Perceptron with PCP)</ins>: a type of model that uses PCP (similar to RF[PCP]) to predict other properties of a molecule 
+
+<ins>Background</ins>: 
+
+Determinants for BBB permeability include CNS activity, BBB+-, and logBB ratio. Multiple determinants are used as an attempt to enlarge the size and quality of the database. 
+
+    - Problem: Overfitting, too many molecular descriptors for each molecule, can cause the prediction model to learn false and dubious patterns
+
+    - Solution: Instead, deep learning techniques can select optimal and important features and descriptors for BBB permeability 
+
+GNN and Attentive FP were used as models to predict BBB permeability
+
+<ins>Method</ins>: 
+
+MoleculeNet provides information about parameters such as BBB permeability. The BBBp dataset either has a BBB+/BBB- value or a logBB value. M-data (main data) is curated through MoleculeNet and processed.
+
+<ins>Cleaning Data and Defects</ins>: Remove data with the following features
+
+    - SMILES can’t be identified in RDKit 
+
+    - Duplicates 
+
+<ins>Data Curation</ins>: 
+
+    - Remove salts and solvents 
+
+    - Neutralize 
+
+    - If a SMILES contains multiple molecules, separate the compound and extract the molecule with the largest molecular weight (often the “main drug”/”parent drug”)
+
+<ins>Supplementary Data Set</ins>:
+
+S-data (supplementary data) is a combination of external data containing BBB permeability values used to test the accuracy of the existing BBBp model.
+
+    - Validity of Divergence between S-data and M-data: To ensure that the S-data is significantly/comparably different from the M-data, Tanimoto similarity and t-distributed stochastic neighbor embedding (t-SNE) are used.
+
+<ins>Models</ins>:
+GROVER and Attentive FP models were chosen to be trained for BBB permeability because they are pre-trained with existing data and use molecular fingerprints and molecular structure to make more accurate decisions about BBB permeability.
