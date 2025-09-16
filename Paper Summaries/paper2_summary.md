@@ -75,4 +75,39 @@ S-data (supplementary data) is a combination of external data containing BBB per
     - Validity of Divergence between S-data and M-data: To ensure that the S-data is significantly/comparably different from the M-data, Tanimoto similarity and t-distributed stochastic neighbor embedding (t-SNE) are used.
 
 <ins>Models</ins>:
+
 GROVER and Attentive FP models were chosen to be trained for BBB permeability because they are pre-trained with existing data and use molecular fingerprints and molecular structure to make more accurate decisions about BBB permeability.
+
+<ins>Results</ins>: 
+
+After testing with S-data, GROVER, and Attentive FP, on average, better performance for ROC_AUC, PRC_AUC, MCC, and BACC in comparison to other models: RF(ECFP), MLP(ECFP), RF(PCP), and MLP(PCP). 
+
+<ins>Attempt to Account for Active Transport</ins>:
+
+Because models so far only predicted the passive transport of drugs using molecular data and not the active transport of drugs, information about the substrates of transporters was used as an attempt to train the molecules for active transport as well. However, GROVER had similar results with the other predictive models, showing the lack of capability for GROVER to successfully use the data to account for the active transport of drugs through the BBB 
+ 
+<ins>Limitations</ins>:
+
+The deviation of data (the provided data for models contained three times as many BBB+ molecules in comparison to BBB- molecules, when in reality, 98% of drugs can’t pass through the BBB), algorithms, and data quantity limited the accuracy of the model. 
+
+<ins>Uncertainty Estimations</ins>:
+
+As an attempt to account for the limitations, uncertainty estimations were used to predict the reliability of the prediction
+
+<ins>Algorithms for Uncertainty Estimation</ins>: 
+
+Five proposed algorithms were used for uncertainty estimation of the result:
+
+    - Entropy
+
+    - MC-dropout
+
+    - Multi-initial
+
+    - FPsDist
+
+    - LatentDist
+
+<ins>Results</ins>: An ensemble of Entropy and MC-dropout provided the best results for uncertainty estimation.
+
+<ins>Result with Uncertainty Estimation</ins>: Combined with the algorithms for the uncertainty estimate, as well as the use of the MCC graph to calculate the prediction performance of the models, GROVER’s performance was ultimately enhanced. Finally, the GROVER-BBBp model was chosen as the ideal model and was tested with clinical and marketed drugs.
