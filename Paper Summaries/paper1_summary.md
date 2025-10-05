@@ -26,10 +26,10 @@
 
 # Summary
 ## Steps for Obtaining and Revising Data: 
-### Reference Papers
+### <ins>Reference Papers</ins>:
 Find articles and papers containing BBB permeability and/or logBB information for each molecular compound
 
-<ins>Extract Data from File</ins>:
+### <ins>Extract Data from File</ins>:
 
     - If the document is a PDF: 
 
