@@ -10,19 +10,19 @@
 
 **<ins>PubChem CID</ins>**: a unique number that is associated with a unique chemical compound stored in the PubChem Compound Database 
 
-<ins>RdKit</ins>: an open-source cheminformatics library that allows you to find information related to molecules 
+**<ins>RdKit</ins>**: an open-source cheminformatics library that allows you to find information related to molecules 
 
-<ins>Isomeric SMILES</ins>: a type of SMILES that represents bonds between different elements as well as their stereochemical and isotopic information
+**<ins>Isomeric SMILES</ins>**: a type of SMILES that represents bonds between different elements as well as their stereochemical and isotopic information
 
-<ins>Canonical SMILES</ins>:  a type of SMILES that represents bonds between different elements
+**<ins>Canonical SMILES</ins>**:  a type of SMILES that represents bonds between different elements
 
-<ins>stereochemical</ins>: the 3D arrangement of atoms
+**<ins>stereochemical</ins>**: the 3D arrangement of atoms
 
-<ins>InChI (International Chemical Identifier)</ins>: a unique representation of chemical structure as a line of text and symbols that is longer than SMILES but contains stereochemical and isometric information
+**<ins>InChI (International Chemical Identifier)</ins>**: a unique representation of chemical structure as a line of text and symbols that is longer than SMILES but contains stereochemical and isometric information
 
-<ins>logBB threshold value</ins>: a determinant value that determines whether a drug is permeable (above threshold) or not permeable to the BBB (below threshold)
+**<ins>logBB threshold value</ins>**: a determinant value that determines whether a drug is permeable (above threshold) or not permeable to the BBB (below threshold)
 
-<ins>IUPAC name</ins>: a readable representation of a certain chemical molecule intended to be used as the vocabulary for scientific works
+**<ins>IUPAC name</ins>**: a readable representation of a certain chemical molecule intended to be used as the vocabulary for scientific works
 
 # Summary
 ## Steps for Obtaining and Revising Data: 
@@ -41,7 +41,7 @@ Find articles and papers containing BBB permeability and/or logBB information fo
 
         - Convert to Excel XLSX directly using Microsoft Office
 
-<ins>Revising and Cleaning Data</ins>:
+### <ins>Revising and Cleaning Data</ins>:
 
     - Fix invalid SMILES: Remove white spaces or line breaks from the SMILES string 
     to create a valid SMILES string 
@@ -64,7 +64,7 @@ Find articles and papers containing BBB permeability and/or logBB information fo
 
         - Note: SMILES string checked for validity by loading into RdKit 
 
-<ins>Add Isomeric/Canonical SMILES</ins>: 
+### <ins>Add Isomeric/Canonical SMILES</ins>: 
 
     - Problem: Normal SMILES strings don’t have stereochemical information, which influences 
     the permeability of the specific compound through the BBB membrane 
@@ -72,7 +72,7 @@ Find articles and papers containing BBB permeability and/or logBB information fo
     - Solution: Use PUG-REST API to get isomeric SMILES using normal SMILES, or use PubChemPy to get 
     canonical SMILES if isomeric isn’t available 
 
-<ins>ChEMBL Structure Pipeline</ins>:
+### <ins>ChEMBL Structure Pipeline</ins>:
 
     - Run SMILES through the ChEMBL Structure Pipeline, which cleans up the SMILES string by:
 
@@ -86,19 +86,19 @@ Find articles and papers containing BBB permeability and/or logBB information fo
 
         - And more… 
 
-<ins>Reupdate PubChem CID</ins>: 
+### <ins>Reupdate PubChem CID</ins>: 
 
     - ChEMBL Structure Pipeline outputs a canonical or isomeric SMILES that can be different from the original, so use PubChemPy 
     to update all the information again and store it.
 
-<ins>Data Curation</ins> 
+### <ins>Data Curation</ins> 
 
     - Problem: InChI is unique molecularly, but can’t resolve tautomeric form (same molecules but different structure)
 
     - Solution: Use a unique InChI (generated with RdKit) and isomeric/canonical SMILES (which distinguishes differences in 
     stereochemical information) for a unique chemical identifier. 
     
-<ins>Data Curation</ins>: Filtering and Grouping Data
+### <ins>Data Curation</ins>: Filtering and Grouping Data
 
     - Remove molecules with logBB values that are outliers (based on the distribution of logBB values)  
     
