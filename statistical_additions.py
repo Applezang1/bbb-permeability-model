@@ -5,47 +5,47 @@ import statistics
 tpsa_positive_array = np.array(tpsa_positive)
 tpsa_negative_array = np.array(tpsa_negative)
 t_stat, p_value = ttest_ind(tpsa_positive_array, tpsa_negative_array)
-print(f'The P-value between TPSA of BBB+ and BBB- molecules is {p_value:.10000f}')
+print(f'The P-value between TPSA of BBB+ and BBB- molecules is {p_value:.10f}')
 
 '''Find P-value between logP of BBB+ and BBB- molecules'''
 logP_positive_array = np.array(logP_positive)
 logP_negative_array = np.array(logP_negative)
 t_stat, p_value = ttest_ind(logP_positive_array, logP_negative_array)
-print(f'The P-value between logP of BBB+ and BBB- molecules is {p_value:.10000f}')
+print(f'The P-value between logP of BBB+ and BBB- molecules is {p_value:.10f}')
 
 '''Find the Median of TPSA for BBB+ and BBB- molecules'''
 median_tpsa_positive = statistics.median(tpsa_positive_array)
 median_tpsa_negative = statistics.median(tpsa_negative_array)
-print(f'Median TPSA Positive: {median_tpsa_positive}')
-print(f'Median_TPSA_Negative: {median_tpsa_negative}')
+print(f'Median TPSA BBB+: {median_tpsa_positive}')
+print(f'Median TPSA BBB-: {median_tpsa_negative}')
 
 '''Find the Median of logP for BBB+ and BBB- molecules'''
 median_logP_positive = statistics.median(logP_positive_array)
 median_logP_negative = statistics.median(logP_negative_array)
-print(f'Median logP Positive: {median_logP_positive}')
-print(f'Median logP Negative: {median_logP_negative}') 
+print(f'Median logP BBB+: {median_logP_positive}')
+print(f'Median logP BBB-: {median_logP_negative}') 
 
 '''Find the Interquartile Range of TPSA for BBB+ and BBB- molecules'''
 Q1_tpsa_positive = np.percentile(tpsa_positive_array, 25)
 Q3_tpsa_positive = np.percentile(tpsa_positive_array, 75)
-print(f"TPSA Positive Q1: {Q1_tpsa_positive}")
-print(f"TPSA Positive Q3: {Q3_tpsa_positive}")
+print(f"TPSA BBB+ Q1: {Q1_tpsa_positive}")
+print(f"TPSA BBB+ Q3: {Q3_tpsa_positive}")
 
 Q1_tpsa_negative = np.percentile(tpsa_negative_array, 25)
 Q3_tpsa_negative = np.percentile(tpsa_negative_array, 75)
-print(f"TPSA Negative Q1: {Q1_tpsa_negative}")
-print(f"TPSA Negative Q3: {Q3_tpsa_negative}")
+print(f"TPSA BBB- Q1: {Q1_tpsa_negative}")
+print(f"TPSA BBB- Q3: {Q3_tpsa_negative}")
 
 '''Find the Interquartile Range of logP for BBB+ and BBB- molecules'''
 Q1_logP_positive = np.percentile(logP_positive_array, 25)
 Q3_logP_positive = np.percentile(logP_positive_array, 75)
-print(f"logP Positive Q1: {Q1_logP_positive}")
-print(f"logP Positive Q3: {Q3_logP_positive}")
+print(f"logP BBB+ Q1: {Q1_logP_positive}")
+print(f"logP BBB+ Q3: {Q3_logP_positive}")
 
 Q1_logP_negative = np.percentile(logP_negative_array, 25)
 Q3_logP_negative = np.percentile(logP_negative_array, 75)
-print(f"logP Negative Q1: {Q1_logP_negative}")
-print(f"logP Negative Q3: {Q3_logP_negative}")
+print(f"logP BBB- Q1: {Q1_logP_negative}")
+print(f"logP BBB- Q3: {Q3_logP_negative}")
 
 '''Find Confidence Interval of TPSA difference of BBB+ and BBB- molecules'''
 n1 = len(tpsa_positive) # Size of the BBB+ dataset
@@ -64,12 +64,11 @@ degrees_of_freedom = numerator/denominator # Calculate degrees of freedom using 
 t_critical_value = stats.t.ppf(0.975, degrees_of_freedom) # Critical Value for 95% confidence 
 critical_value_right = round(((mean1-mean2) + t_critical_value * np.sqrt((s1/n1)+(s2/n2))), 5) # + Critical Value
 critical_value_left = round(((mean1-mean2) - t_critical_value * np.sqrt((s1/n1)+(s2/n2))), 5) # - Critical Value
-print(critical_value_left)
-print(critical_value_right)
+print(f'We can state that the TPSA difference of BBB+ and BBB- lies between {critical_value_left} and {critical_value_right} with 95% confidence.')
 
 '''Find Effect Size of TPSA difference of BBB+ and BBB- molecules'''
 effective_size = (mean1 - mean2)/pooled_standard_deviation # Cohen's d for effective size
-print(effective_size)
+print(f'The effective size for the difference between TPSA of BBB+ and BBB- is {effective_size}.')
 
 '''Find Confidence Interval of logP difference of BBB+ and BBB- molecules'''
 n1 = len(logP_positive) # Size of the BBB+ dataset
@@ -88,9 +87,8 @@ degrees_of_freedom = numerator/denominator # Calculate degrees of freedom using 
 t_critical_value = stats.t.ppf(0.975, degrees_of_freedom) # Critical Value for 95% confidence 
 critical_value_right = round(((mean1-mean2) + t_critical_value * np.sqrt((s1/n1)+(s2/n2))), 5) # + Critical Value
 critical_value_left = round(((mean1-mean2) - t_critical_value * np.sqrt((s1/n1)+(s2/n2))), 5) # - Critical Value
-print(critical_value_left)
-print(critical_value_right)
+print(f'We can state that the logP difference of BBB+ and BBB- lies between {critical_value_left} and {critical_value_right} with 95% confidence.')
 
 '''Find Effect Size of logP difference of BBB+ and BBB- molecules'''
 effective_size = (mean1 - mean2)/pooled_standard_deviation # Cohen's d for effective size
-print(effective_size)
+print(f'The effective size for the difference between logP of BBB+ and BBB- is {effective_size}.')

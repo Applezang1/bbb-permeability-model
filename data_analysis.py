@@ -28,6 +28,10 @@ duplicates = SMILES_count[SMILES_count > 1] # 1463 duplicate SMILES
 '''Count the Number of Unique Compounds'''  
 unique_compounds = SMILES_count[SMILES_count < 2] # 10635 unique SMILES
 
+'''Print the Number of SMILES Duplicate and Unique SMILES'''
+print(f"There are a total of {duplicates} SMILES in the data table") 
+print(f"There are a total of {unique_compounds} SMILES in the data table")
+
 '''Table of Duplicate Compounds and Reported BBclass Data'''
 duplicate_SMILES = duplicates.index.to_numpy() # Makes a numpy array of all the duplicate SMILES
 duplicate_SMILES_table = data_table[data_table['SMILES'].isin(duplicate_SMILES)] # Makes a table of every instance of duplicate SMILES 
@@ -72,8 +76,8 @@ for value in unique_SMILES_table['BBclass']:
         BBB_permeable_number = BBB_permeable_number + 1
     elif value == 0: 
         BBB_nonpermeable_number = BBB_nonpermeable_number + 1
-print(BBB_permeable_number) # 9589 BBB+ molecules
-print(BBB_nonpermeable_number) # 3601 BBB- molecules
+print(f'The number of molecules in the data table that are BBB permeable is {BBB_permeable_number}')  # 9589 BBB+ molecules
+print(f'The number of molecules in the data table that are BBB nonpermeable is {BBB_nonpermeable_number}') # 3601 BBB- molecules
 
 '''Distribute SMILES into separate tables based on BBB permeability'''
 BBB_permeable = unique_SMILES_table[unique_SMILES_table['BBclass'] == 1]['SMILES'].tolist()
