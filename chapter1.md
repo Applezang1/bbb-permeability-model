@@ -1,7 +1,7 @@
 # Chapter 1: Introduction   
 
 ## Artificial Intelligence
-**<ins>Artificial Intelligence</ins?**: systems that are designed to simulate intelligent behavior 
+**<ins>Artificial Intelligence</ins>**: systems that are designed to simulate intelligent behavior 
 
 **<ins>Machine learning</ins>**: subclass of AI, a type of AI model that takes inputted data and fits the data into a mathematical model in order to make decisions and predict an output  
 
@@ -24,10 +24,14 @@
 **<ins>Deep learning</ins>**: process of training and fitting a model onto the data 
 
 **<ins>Input Data Characteristics</ins>**: 
-    - <ins>Data Type</ins>: discrete/continuous
-    - <ins>Dimensionality</ins>: low dimensional/high dimensional
-    - <ins>Length</ins>: constant or variable length  
-    - <ins>Note</ins>: Latent variables express input data in a simplified way by observing correlations or patterns between the data. Latent variables are useful because of their benefits, which require less input data and cause higher accuracy in predicted output
+
+    - Data Type: discrete/continuous
+
+    - Dimensionality: low dimensional/high dimensional
+
+    - Length: constant or variable length  
+
+    - Note: Latent variables express input data in a simplified way by observing correlations or patterns between the data. Latent variables are useful because of their benefits, which require less input data and cause higher accuracy in predicted output
 
 ## Types of Machine Learning Methods: 
 <ins>Types of Machine Learning Methods</ins>: supervised, unsupervised, reinforcement learning 
