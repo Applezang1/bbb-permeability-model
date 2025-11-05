@@ -16,14 +16,14 @@
 
 **<ins>Discriminative model</ins>**: a machine learning model that uses the value of an output y and returns input data from real-world measurements
 
-### Supervised Learning Model
+## Supervised Learning Model
 **<ins>Supervised learning model</ins>**: a type of machine learning model that maps one or more inputs to one or more outputs 
 
     - Example: Age and mileage of a car -> the car’s estimated price 
 
 <ins>Overview of Method</ins>: Supervised learning models usually use a mathematical function to compute the output based on the input data (inference) while changing the parameters of the mathematical function to adjust the output (training) 
 
-### Overview of Developing a Supervised Learning Model: 
+## Overview of Developing a Supervised Learning Model: 
 
     - Input a training dataset of input and output pairs 
     
@@ -31,26 +31,26 @@
 
     - Minimize the loss functions by adjusting the parameters of the mathematical model. The loss function is a function in terms of a set of parameters
 
-### Example of Supervised Learning Model: 
+## Example of Supervised Learning Model: 
 **<ins>1D Linear Regression Model</ins>**: a straight line equation that has one input (x) and one output (y). The 1D Linear Regression Model has two parameters: y-intercept and slope.
 
-<ins>Computing the Loss Function</ins>:
+### Computing the Loss Function:
 
     - Define a training error which is the deviation between the model’s prediction of the output value and the actual output value (this type of training error is called a least-squares loss) 
 
     - This creates the loss function, which is a function dependent on the parameters, with the most optimal parameters minimizing a loss function 
 
-<ins>Training the Model</ins>: 
+### Training the Model: 
 
 **<ins>Gradient</ins>**: geometric visualization of the rate of change of a muti-variable function. The gradient has different heights at different locations and the point of the lowest height minimizes the multi-variable function
 
 By calculating the gradient of the loss function, we can move down in the direction that’s most steeply downhill until the gradient is flat and we have reached a minimum 
 
-<ins>Testing the Model</ins>: 
+### Testing the Model: 
 
 A separate set of data (test data) can be used to calculate/determine the accuracy of the supervised learning model.
 
-<ins>Two Possible Results from Testing</ins>: 
+### Two Possible Results from Testing: 
 
     - Underfitting: the model is unable to perform well for both the test data and the training data. This concludes that the model is unable to capture the relationship between input and output values
 
