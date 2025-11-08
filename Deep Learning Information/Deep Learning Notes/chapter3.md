@@ -52,30 +52,48 @@ A function in terms of x and 10 parameters: y = phi[0] + phi[1]*a*(phi[10] + phi
 
 ## General Method for Shallow Neural Network:
 The linear function of the input data is computed 
-Note: A linear function of the input data is a function with an input variable (Example: phi[20] + phi[21]x)
+
+    - Note: A linear function of the input data is a function with an input variable (Example: phi[20] + phi[21]x)
+
 The value of the linear function is passed through an activation function (a)
-Example: 
-ReLU (rectified linear unit): a function that returns the value when the input is positive and returns a zero in any other scenario
+
+<ins>Example</ins>: 
+
+    - ReLU (rectified linear unit): a function that returns the value when the input is positive and returns a zero in any other scenario
+
 The value of the activation function is offsetted by a parameter (phi[0])
+
 We can optimize the value of the parameters to minimize the least squares loss function between the input/output data pair and the predicted value to train the model
 
-Hidden Units  
-Function: Each hidden unit adds a component that contributes to the shape of the final/resulting function 
-Classification of Hidden Units:
-Active: A hidden layer contributes to the output 
-Inactive: A hidden layer doesn’t contribute to the output 
+## Hidden Units  
+<ins>Function</ins>: Each hidden unit adds a component that contributes to the shape of the final/resulting function 
+
 In the linear function mentioned above, the hidden units h1, h2, and h3 are 
-h1 = a*(phi[10] + phi[11]x)
-h2 = a*(phi[20] + phi[21]x)
-h3 = a*(phi[30] + phi[31]x) 
+
+    - h1 = a*(phi[10] + phi[11]x)
+
+    - h2 = a*(phi[20] + phi[21]x)
+
+    - h3 = a*(phi[30] + phi[31]x) 
+
 Simplified Equation: y = phi[0] + phi[1]*h1 + phi[2]*h2 + phi[3]*h3 
+### Classification of Hidden Units:
 
-Universal Approximation Theorem states that a shallow network with enough hidden units can fine-tune the function to a point where it can approximate any complex function with precision 
+    - Active: A hidden layer contributes to the output 
 
-Shallow Neural Network for Multivariate Inputs/Outputs: 
-Two Scenarios: 
-#1: A function has a multivariate (more than one) output 
-#2: A function has a multivariate input and a multivariate output
+    - Inactive: A hidden layer doesn’t contribute to the output 
+
+## Universal Approximation Theorem 
+
+**<ins>The Universal Approximation Theorem</ins>** states that a shallow network with enough hidden units can fine-tune the function to a point where it can approximate any complex function with precision 
+
+## Shallow Neural Network for Multivariate Inputs/Outputs: 
+<ins>Two Scenarios</ins>: 
+
+    - #1: A function has a multivariate (more than one) output 
+
+    - #2: A function has a multivariate input and a multivariate output
+
 In either of these scenarios, each hidden layer returns a piecewise linear function that contributes to the shape of the continuous piecewise linear function of the input (output function)  
 
 
