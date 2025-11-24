@@ -32,31 +32,49 @@ Gradient descent is a method to adjust the parameters to minimize the loss funct
 Stochastic gradient descent is a method to adjust the parameter to minimize the loss functions, but the parameters are adjusted so that the magnitude of decrease is varied and not necessarily the steepest. Stochastic gradient descent can also move uphill, allowing for the possibility of moving from an area of one local minimum to the next. 
 
 **<ins>Stochastic Gradient Descent Methods</ins>**
+
     - The gradient for a random subset of training data is chosen to be computed. The random subset of data chosen is called the minibatch or batch. If the random subset of data is as large as the entire dataset, it is known as a full-batch gradient descent.  
 
     - We multiply a negative constant to the computed gradient and add the change back into each parameter of the model. 
 
 <ins>Note</ins>: Instead of changing the subset of training data to compute the gradient for, the stochastic gradient descent might instead change the loss function for each instance and compute the gradient for that loss function. This has the same effect as the stochastic gradient descent defined above. 
 
-Advantages of Stochastic Gradient Descent 
-Even if stochastic gradient descent only computes the gradient for a particular subset of data, the overall function still moves down the gradient. 
-Less computation power to compute a stochastic gradient descent, since there’s less training examples chosen per instance 
-The stochastic gradient descent can escape local minimas through the variation in direction for different subsets of training data 
-The stochastic gradient descent is less likely to get stuck at saddle points 
-Momentum 
-Momentum: a weighted value whose value depends on the current and all past gradients, where the gradients farther back in time have less weight on the current momentum.  
-Instead of multiplying by the negative gradient of the current gradient, stochastic gradient descent instead multiplies it by the negative of the current momentum.  
-Advantages of Momentum 
-Momentum is added as a method to smoothen trajectory
-Momentum reduces oscillatory behavior of the trajectory 
-Momentum helps the model converge to a minimum faster 
-Nesterov Accelerated Momentum: 
-A subset of momentum that looks ahead by calculating the momentum of the current time instance and uses that momentum value to compute the momentum value of the next time interval, essentially moving to the next predicted point  
+**<ins>Advantages of Stochastic Gradient Descent</ins>**
+
+    - Even if stochastic gradient descent only computes the gradient for a particular subset of data, the overall function still moves down the gradient. 
+
+    - Less computation power to compute a stochastic gradient descent, since there’s less training examples chosen per instance 
+
+    - The stochastic gradient descent can escape local minimas through the variation in direction for different subsets of training data 
+
+    - The stochastic gradient descent is less likely to get stuck at saddle points 
+
+## Momentum 
+**<ins>Momentum</ins>**: a weighted value whose value depends on the current and all past gradients, where the gradients farther back in time have less weight on the current momentum.  
+
+    - Instead of multiplying by the negative gradient of the current gradient, stochastic gradient descent instead multiplies it by the negative of the current momentum.  
+
+**<ins>Advantages of Momentum</ins>**
+
+    - Momentum is added as a method to smoothen trajectory
+
+    - Momentum reduces oscillatory behavior of the trajectory 
+
+    - Momentum helps the model converge to a minimum faster 
+
+## Nesterov Accelerated Momentum: 
+A subset of momentum that looks ahead by calculating the momentum of the current time instance and uses that momentum value to compute the momentum value of the next time interval, essentially moving to the next predicted point
+
+ 
 Even better reduction of oscillatory behavior, smoothening of trajectory, and converging to a minimum than standard momentum 
 
-Adaptive Momentum Estimation (Adam)
-Problem 
-For stochastic gradient descent, the distance moved on the gradient depends on the size of the gradient (large gradients = large adjustments, small gradients = small adjustments) 
-Therefore by normalizing the gradient, the function will descend down the gradient at constant distance, regardless of the size of the gradient. 
-Adaptive momentum estimation uses the solution to the problem and adds momentum, changing the normalizing of the gradient 
+## Adaptive Momentum Estimation (Adam)
+<ins>Problem</ins>
+
+    - For stochastic gradient descent, the distance moved on the gradient depends on the size of the gradient (large gradients = large adjustments, small gradients = small adjustments) 
+
+    - Therefore by normalizing the gradient, the function will descend down the gradient at constant distance, regardless of the size of the gradient. 
+
+**<ins>Adaptive momentum estimation</ins>** uses the solution to the problem and adds momentum, changing the normalizing of the gradient 
+
 This increases the accuracy and efficiency of the model because its movements depend on the history of past movements from different past gradients as well as its magnitudes. 
