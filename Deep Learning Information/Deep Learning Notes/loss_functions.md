@@ -7,17 +7,17 @@
 
 2) Then, the maximum likelihood criterion is used to compute the parameter that causes the output to most resemble the defined output distribution  
 
-<ins>Assumptions</ins>: By using the maximum likelihood criterion, we are assuming that 
+3) To simplify the maximum likelihood criterion and make calculations easier, take the logarithm of the maximum likelihood criterion (now called log-likelihood criterion) 
+
+4) The log-likelihood criterion is multiplied by the negative one to create the negative log-likelihood criterion, which forms the loss function. The negative log-likelihood criterion finds the parameter that minimizes the divergence from the predicted probability distribution to the actual probability distribution
+
+<ins>Note</ins>: By using the maximum likelihood criterion, we are assuming that 
 
 - The data is identically distributed (each data point is computed using the same probability function)
 
 - The data is independent (one data point doesn’t influence another) 
 
 - Conclusion: This is why we’re able to multiply the probability distributions of different input values of the same parameter (same probability function) 
-
-3) To simplify the maximum likelihood criterion and make calculations easier, take the logarithm of the maximum likelihood criterion (now called log-likelihood criterion) 
-
-4) The log-likelihood criterion is multiplied by the negative one to create the negative log-likelihood criterion, which forms the loss function. The negative log-likelihood criterion finds the parameter that minimizes the divergence from the predicted probability distribution to the actual probability distribution
 
 ## Different Loss Functions  
 ### Univariate Regression 
