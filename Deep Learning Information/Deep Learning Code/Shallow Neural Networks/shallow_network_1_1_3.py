@@ -138,6 +138,6 @@ y_predict, *_ = shallow_1_1_3(x_train, ReLU, phi_0,phi_1,phi_2,phi_3, theta_10, 
 
 # Compute the least squares loss between the two shallow neural networks
 loss = least_squares_loss(y_train,y_predict)
-print('Your Loss = %3.3f, True value = 9.385'%(loss))
+print('Loss = %3.3f'%(loss))
 
 
