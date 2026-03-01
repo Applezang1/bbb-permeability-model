@@ -1,7 +1,15 @@
 from datasets import Dataset
+from transformers import AutoTokenizer
 from torch.utils.data import random_split, DataLoader
 
-def create_dataset(tokenizer, data, train_split, test_split): 
+# Define Tokenizer
+tokenizer = AutoTokenizer.from_pretrained("DeepChem/ChemBERTa-77M-MTR")
+
+def tokenization(dataset): 
+        '''Tokenizes SMILES inputs'''
+        return tokenizer(dataset['SMILES'], padding='max_length', truncation=True, max_length=200)
+
+def create_dataset(data, train_split, test_split): 
     '''Creates training and testing PyTorch datasets from Pandas DataFrame
 
     Args: 
@@ -17,10 +25,6 @@ def create_dataset(tokenizer, data, train_split, test_split):
 
     # Load inputted Pandas DataFrame into a dataset
     dataset = Dataset.from_pandas(data) 
-
-    # Define a tokenization function to tokenize the SMILES string
-    def tokenization(dataset): 
-        return tokenizer(dataset['SMILES'], padding='max_length', truncation=True, max_length=200)
     
     # Tokenize the dataset
     dataset = dataset.map(tokenization, batched=True)
@@ -52,14 +56,16 @@ def create_dataloader(train_dataset, test_dataset, batch_size, num_workers=0):
     dataset=train_dataset, 
     batch_size=batch_size, 
     shuffle=True, 
-    num_workers=num_workers
+    num_workers=num_workers, 
+    pin_memory=False
     )
 
     # Create the testing dataloader
     test_dataloader = DataLoader(
         dataset=test_dataset, 
         batch_size=batch_size, 
-        num_workers=num_workers
+        num_workers=num_workers,
+        pin_memory=False
     ) 
 
     return train_dataloader, test_dataloader
