@@ -1,15 +1,7 @@
 from datasets import Dataset
-from transformers import AutoTokenizer
 from torch.utils.data import random_split, DataLoader
 
-# Define Tokenizer
-tokenizer = AutoTokenizer.from_pretrained("DeepChem/ChemBERTa-77M-MTR")
-
-def tokenization(dataset): 
-        '''Tokenizes SMILES inputs'''
-        return tokenizer(dataset['SMILES'], padding='max_length', truncation=True, max_length=200)
-
-def create_dataset(data, train_split, test_split): 
+def create_dataset(data, train_split, test_split, tokenizer): 
     '''Creates training and testing PyTorch datasets from Pandas DataFrame
 
     Args: 
@@ -27,6 +19,10 @@ def create_dataset(data, train_split, test_split):
     dataset = Dataset.from_pandas(data) 
     
     # Tokenize the dataset
+    def tokenization(dataset): 
+        '''Tokenizes SMILES inputs'''
+        return tokenizer(dataset['SMILES'], padding='max_length', truncation=True, max_length=200)
+    
     dataset = dataset.map(tokenization, batched=True)
     dataset = dataset.remove_columns('SMILES')
 
@@ -38,12 +34,13 @@ def create_dataset(data, train_split, test_split):
     
     return train_dataset, test_dataset
 
+
 def create_dataloader(train_dataset, test_dataset, batch_size, num_workers=0): 
     '''Creates training and testing dataloaders
     
     Args: 
         train_dataset: Training dataset for the model
-        test_dataset = Training dataset for the model 
+        test_dataset = Testing dataset for the model 
         batch_size = The size of each batch of data in the training and testing dataset 
         num_workers = Number of CPUs to dedicate to creating dataloaders
 
