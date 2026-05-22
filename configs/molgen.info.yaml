@@ -3,7 +3,7 @@ hyperparameters:
   VALIDATION_SPLIT: 0.5
   BATCH_SIZE: 32 
   NUM_WORKERS: 0
-  NUM_EPOCHS: 50
+  NUM_EPOCHS: 10
   LR: 0.001
 model_information: 
-  model_name: ChemBERTa-77M-MTR
+  model_name: Mol-Gen

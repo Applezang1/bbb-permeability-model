@@ -1,14 +1,9 @@
-import torch
-import numpy as np
-from src.data_processing.dataloaders import create_dataset, create_dataloader 
-from src.data_processing.dataset_fn import curate_bbb_data, raw_bbb_data
+import torch, yaml, argparse
+import numpy as np, pandas as pd
+from src.data_processing.dataloaders import create_selfies_dataset, create_dataloader, create_smiles_dataset
 from src.modeling.engine import train
 from torchinfo import summary
 import matplotlib.pyplot as plt
-from transformers.models.roberta.modeling_roberta import RobertaForSequenceClassification
-from transformers import AutoTokenizer
-import yaml
-import argparse 
 from src.modeling.factory import create_model
 
 parser = argparse.ArgumentParser()
@@ -19,11 +14,12 @@ args = parser.parse_args()
 with open(args.config_file, 'r') as hyp_file: 
     hyperparameters = yaml.safe_load(hyp_file)
 
-TRAIN_SPLIT = hyperparameters['hyperparameters']['TRAIN_SPLIT']
-TEST_SPLIT = hyperparameters['hyperparameters']['TEST_SPLIT']
+TEST_VALIDATION_SPLIT = hyperparameters['hyperparameters']['TEST_VALIDATION_SPLIT']
+VALIDATION_SPLIT = hyperparameters['hyperparameters']['VALIDATION_SPLIT']
 BATCH_SIZE = hyperparameters['hyperparameters']['BATCH_SIZE']
 NUM_WORKERS = hyperparameters['hyperparameters']['NUM_WORKERS']
 NUM_EPOCHS = hyperparameters['hyperparameters']['NUM_EPOCHS']
+LR = hyperparameters['hyperparameters']['LR']
 
 # Create device-agnostic code 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -36,15 +32,15 @@ model, tokenizer = create_model(model_information)
 model.to(device)
 
 optimizer = torch.optim.SGD(params=model.parameters(), 
-                            lr=0.01)
+                            lr=LR)
 
 ### Curate BBB data ###
-BBB_data = curate_bbb_data(raw_bbb_data())
+BBB_data = pd.read_csv('data/processed/selfies_dataset.csv')
 
-### Create training and testing datasets ###
-train_dataset, test_dataset = create_dataset(BBB_data, 
-                                             TRAIN_SPLIT, 
-                                             TEST_SPLIT, 
+### Create training, testing, and validation datasets ###
+train_dataset, test_dataset, validation_dataset = create_selfies_dataset(BBB_data, 
+                                             TEST_VALIDATION_SPLIT,
+                                             VALIDATION_SPLIT, 
                                              tokenizer)
 
 ### Create training and testing dataloaders ###
@@ -52,6 +48,7 @@ train_dataloader, test_dataloader = create_dataloader(train_dataset,
                                                       test_dataset, 
                                                       BATCH_SIZE, 
                                                       NUM_WORKERS)
+
 
 ### Training ###
 results = train(model=model, 

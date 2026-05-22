@@ -6,4 +6,4 @@ hyperparameters:
   NUM_EPOCHS: 50
   LR: 0.001
 model_information: 
-  model_name: ChemBERTa-77M-MTR
+  model_name: BARTSmiles
