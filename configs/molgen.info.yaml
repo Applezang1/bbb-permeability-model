@@ -7,3 +7,5 @@ hyperparameters:
   LR: 0.001
 model_information: 
   model_name: Mol-Gen
+dataset_information: 
+  dataset: data/processed/selfies_dataset.csv

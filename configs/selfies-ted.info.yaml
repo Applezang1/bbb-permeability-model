@@ -7,3 +7,5 @@ hyperparameters:
   LR: 0.01
 model_information: 
   model_name: SELFIES-TED
+dataset_information: 
+  dataset: data/processed/selfies_dataset.csv

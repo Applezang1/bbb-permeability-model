@@ -7,3 +7,5 @@ hyperparameters:
   LR: 0.001
 model_information: 
   model_name: ChemBERTa-77M-MTR
+dataset_information: 
+  dataset: data/processed/smiles_dataset.csv

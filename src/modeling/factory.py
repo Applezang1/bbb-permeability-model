@@ -1,5 +1,6 @@
 from transformers.models.roberta.modeling_roberta import RobertaForSequenceClassification
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForSeq2SeqLM
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from src.data_processing.dataloaders import create_selfies_dataset, create_smiles_dataset
 
 def create_model(config_file): 
     '''
@@ -35,6 +36,8 @@ def create_model(config_file):
                                                                    use_safetensors=True)
         tokenizer = AutoTokenizer.from_pretrained("gayane/BARTSmiles", 
                                                   add_prefix_space=True) 
+        tokenizer.pad_token_id = 0
+        tokenizer.pad_token = "<s>"
     elif model_name == 'SELFIES-TED':
         tokenizer = AutoTokenizer.from_pretrained("ibm/materials.selfies-ted")
         model = AutoModelForSequenceClassification.from_pretrained("ibm/materials.selfies-ted", 
@@ -46,3 +49,26 @@ def create_model(config_file):
                                                       use_safetensors=True)
         
     return model, tokenizer
+
+
+def dataset_loader(config_file): 
+    '''
+    Returns the appropriate dataset loading function according to the dataset information
+    from the .yaml file in the configs file
+
+    Args: 
+        config_file: The .yaml file in the configs file containing information about the dataset name 
+
+    Returns: 
+        The appropriate PyTorch dataloading function
+    '''
+    
+    # Obtain dataset name from the inputted config file
+    dataset_name = config_file['dataset_information']['dataset']
+
+    # Run a loop to return the appropriate dataset loading function for the dataset
+    if dataset_name == 'data/processed/smiles_dataset.csv': 
+        return create_smiles_dataset
+    
+    elif dataset_name == 'data/processed/selfies_dataset.csv':
+        return create_selfies_dataset

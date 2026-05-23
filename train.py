@@ -4,7 +4,7 @@ from src.data_processing.dataloaders import create_selfies_dataset, create_datal
 from src.modeling.engine import train
 from torchinfo import summary
 import matplotlib.pyplot as plt
-from src.modeling.factory import create_model
+from src.modeling.factory import create_model, dataset_loader
 
 parser = argparse.ArgumentParser()
 parser.add_argument('config_file', help='Type the .yaml path containing the model hyperparameters and information')
@@ -35,10 +35,15 @@ optimizer = torch.optim.SGD(params=model.parameters(),
                             lr=LR)
 
 ### Curate BBB data ###
-BBB_data = pd.read_csv('data/processed/selfies_dataset.csv')
+with open(args.config_file, 'r') as dataset_file: 
+    dataset_information = yaml.safe_load(dataset_file)
+
+dataset = dataset_information['dataset_information']['dataset']
+BBB_data = pd.read_csv(dataset)
 
 ### Create training, testing, and validation datasets ###
-train_dataset, test_dataset, validation_dataset = create_selfies_dataset(BBB_data, 
+create_dataset = dataset_loader(dataset_information)
+train_dataset, test_dataset, validation_dataset = create_dataset(BBB_data, 
                                              TEST_VALIDATION_SPLIT,
                                              VALIDATION_SPLIT, 
                                              tokenizer)
