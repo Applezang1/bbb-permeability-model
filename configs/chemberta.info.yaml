@@ -3,8 +3,8 @@ hyperparameters:
   VALIDATION_SPLIT: 0.5
   BATCH_SIZE: 32 
   NUM_WORKERS: 0
-  NUM_EPOCHS: 50
-  LR: 0.001
+  NUM_EPOCHS: 5
+  LR: 0.005
 model_information: 
   model_name: ChemBERTa-77M-MTR
 dataset_information: 
