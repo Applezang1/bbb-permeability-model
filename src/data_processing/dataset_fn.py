@@ -14,16 +14,21 @@ def raw_bbb_data():
         before any curation methods
     '''
     # Curate LightBBB Dataset
-    light_dataset = pd.read_csv('data/raw/LightBBB.csv', usecols=['SMILES', 'labels'])
+    light_dataset = pd.read_csv('data/raw/LightBBB.csv', 
+                                usecols=['SMILES', 'labels'])
 
     # Curate DeePred Datset
-    deepred_dataset = pd.read_csv('data/raw/DeePred.csv', usecols=['SMILES', 'labels'])
+    deepred_dataset = pd.read_csv('data/raw/DeePred.csv', 
+                                  usecols=['SMILES', 'labels'])
 
     # Curate MoleculeNet Dataset
-    molecule_dataset = pd.read_csv('data/raw/MoleculeNet.csv', usecols=['SMILES', 'labels'])
+    molecule_dataset = pd.read_csv('data/raw/MoleculeNet.csv', 
+                                   usecols=['SMILES', 'labels'])
 
     # Curate B3DB Dataset
-    b3db_dataset = pd.read_csv('data/raw/B3DB.tsv', usecols=['SMILES', 'logBB'], sep='\t')
+    b3db_dataset = pd.read_csv('data/raw/B3DB.tsv', 
+                               usecols=['SMILES', 'logBB'],
+                               sep='\t')
     b3db_bbb_class = []
     for index in range(len(b3db_dataset['logBB'])):
         bbb_class = 1 if b3db_dataset['logBB'][index] > 0.3 else 0
@@ -39,7 +44,7 @@ def raw_bbb_data():
     return BBB_dataset
 
 
-def curate_bbb_data(BBB_dataset): 
+def curate_bbb_data(BBB_dataset: pd.DataFrame): 
     '''
     Curates the BBB dataset from raw_bbb_data() with the following curation method: 
         1. Remove all Invalid SMILES from the dataset 
@@ -85,42 +90,47 @@ def curate_bbb_data(BBB_dataset):
 
     ### 3. Check for salts and solvents in SMILES ### 
     remover = SaltRemover()
-    for mol in BBB_data['Mol']:
+    for index in BBB_data.index:
+        mol = BBB_data.at[index, 'Mol']
         stripped_mol, deleted_fragment = remover.StripMolWithDeleted(mol) 
         if deleted_fragment:
             stripped_smiles = Chem.MolToSmiles(stripped_mol, isomericSmiles=True)
-            BBB_data.loc[BBB_data['Mol'] == mol, 'SMILES'] = stripped_smiles 
-            BBB_data.loc[BBB_data['Mol'] == mol, 'Mol'] = stripped_mol
+            BBB_data.at[index, 'SMILES'] = stripped_smiles
+            BBB_data.at[index, 'Mol'] = stripped_mol
 
     ### 4. Check for a charge for each SMILES ###
     uncharger = rdMolStandardize.Uncharger() 
-    for mol in BBB_data['Mol']:
+    for index in BBB_data.index:
+        mol = BBB_data.at[index, 'Mol']
         charge = Chem.GetFormalCharge(mol)
         if charge != 0:
             neutral_mol = uncharger.uncharge(mol)
             neutral_smiles = Chem.MolToSmiles(neutral_mol, isomericSmiles=True)
-            BBB_data.loc[BBB_data['Mol'] == mol, 'SMILES'] = neutral_smiles 
-            BBB_data.loc[BBB_data['Mol'] == mol, 'Mol'] = neutral_mol
+            BBB_data.at[index, 'SMILES'] = neutral_smiles
+            BBB_data.at[index, 'Mol'] = neutral_mol
 
     ### 5. Check for explicit Hs for each SMILES ### 
-    for mol in BBB_data['Mol']:
+    for index in BBB_data.index:
+        mol = BBB_data.at[index, 'Mol']
         for atom in mol.GetAtoms(): 
             if atom.GetAtomicNum() == 1:
                 inexplicit_Hs_mol = Chem.RemoveHs(mol)
                 inexplicit_Hs_smiles = Chem.MolToSmiles(inexplicit_Hs_mol, isomericSmiles=True)
-                BBB_data.loc[BBB_data['Mol'] == mol, 'SMILES'] = inexplicit_Hs_smiles 
-                BBB_data.loc[BBB_data['Mol'] == mol, 'Mol'] = inexplicit_Hs_mol
+                BBB_data.at[index, 'Mol'] = inexplicit_Hs_mol
+                BBB_data.at[index, 'SMILES'] = inexplicit_Hs_smiles
                 break
     
     ### 6. Check for duplicate fragments for each SMILES ### 
-    for mol, smiles in zip(BBB_data['Mol'], BBB_data['SMILES']): 
+    for index in BBB_data.index:
+        mol = BBB_data.at[index, 'Mol']
+        smiles = BBB_data.at[index, 'SMILES']
         fragments = smiles.split('.')
         unique_fragments = list(set(fragments))
         if len(unique_fragments) != len(fragments):
             clean_smiles = ".".join(unique_fragments)
             clean_mol = Chem.MolFromSmiles(clean_smiles) 
-            BBB_data.loc[BBB_data['Mol'] == mol, 'SMILES'] = clean_smiles
-            BBB_data.loc[BBB_data['Mol'] == mol, 'Mol'] = clean_mol
+            BBB_data.at[index, 'SMILES'] = clean_smiles
+            BBB_data.at[index, 'Mol'] = clean_mol
 
     ### 7/8. Curate the dataset based on repeated SMILES ###
     # Create a dataset of nonunique SMILES
@@ -146,20 +156,21 @@ def curate_bbb_data(BBB_dataset):
     BBB_data.reset_index(drop=True, inplace=True) 
 
     ### 9. Check for SMILES with atomic numbers greater than 20 ###
-    organic_smiles = []
+    inorganic_smiles = []
+    allowed_atomic_nums = {1, 5, 6, 7, 8, 9, 15, 16, 17, 35, 53}
     for mol in BBB_data['Mol']:
         for atom in mol.GetAtoms(): 
-            if atom.GetAtomicNum() > 20:
-                organic_smiles.append(Chem.MolToSmiles(mol))
+            if atom.GetAtomicNum() not in allowed_atomic_nums:
+                inorganic_smiles.append(Chem.MolToSmiles(mol))
                 break 
     
-    BBB_data = BBB_data[~BBB_data['SMILES'].isin(organic_smiles)]
+    BBB_data = BBB_data[~BBB_data['SMILES'].isin(inorganic_smiles)].copy()
     BBB_data = BBB_data.drop(columns='Mol')
 
     return BBB_data
 
 
-def calculate_chem_features(BBB_data):
+def calculate_chem_features(BBB_data: pd.DataFrame):
     '''
     Calculates the logP, TPSA, molecular weight, NHOH, and NO count of each SMILES in the dataset. 
     Additionally filters out invalid SMILES strings from the inputted data
@@ -199,7 +210,7 @@ def calculate_chem_features(BBB_data):
 
     return BBB_data
 
-def convert_to_selfies(BBB_data): 
+def convert_to_selfies(BBB_data: pd.DataFrame): 
     '''
     Converts the SMILES column in the dataset from curate_bbb_data() to its SELFIES representation
 
@@ -207,7 +218,7 @@ def convert_to_selfies(BBB_data):
         data: The Pandas DataFrame from curate_bbb_data()
 
     Returns: 
-        A 'BBB_data' with a SELFIES column
+        A 'BBB_data' with a SELFIES and BBB permeability label column
     '''
     
     selfies_list = []
@@ -220,10 +231,6 @@ def convert_to_selfies(BBB_data):
     BBB_data = BBB_data.drop(columns='SMILES')
 
     return BBB_data 
-
-
-
-
 
 
 
