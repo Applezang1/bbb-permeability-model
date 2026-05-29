@@ -1,6 +1,6 @@
 from transformers.models.roberta.modeling_roberta import RobertaForSequenceClassification
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from src.data_processing.dataloaders import create_selfies_dataset, create_smiles_dataset
+
 
 def create_model(config_file): 
     '''
@@ -53,14 +53,14 @@ def create_model(config_file):
 
 def dataset_loader(config_file): 
     '''
-    Returns the appropriate dataset loading function according to the dataset information
+    Returns the appropriate molecule column name according to the dataset information
     from the .yaml file in the configs file
 
     Args: 
         config_file: The .yaml file in the configs file containing information about the dataset name 
 
     Returns: 
-        The appropriate PyTorch dataloading function
+        The appropriate molecule column name
     '''
     
     # Obtain dataset name from the inputted config file
@@ -68,7 +68,6 @@ def dataset_loader(config_file):
 
     # Run a loop to return the appropriate dataset loading function for the dataset
     if dataset_name == 'data/processed/smiles_dataset.csv': 
-        return create_smiles_dataset
-    
+        return 'SMILES'  
     elif dataset_name == 'data/processed/selfies_dataset.csv':
-        return create_selfies_dataset
+        return 'SELFIES'
