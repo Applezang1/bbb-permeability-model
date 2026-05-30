@@ -1,12 +1,12 @@
-from src.data_processing.dataset_fn import raw_bbb_data, curate_bbb_data, calculate_chem_features
-import numpy as np, matplotlib.pyplot as plt
-import seaborn as sns
+from src.data_processing.dataset_fn import calculate_chem_features
+import numpy as np, matplotlib.pyplot as plt, seaborn as sns, pandas as pd
+
 
 ### Initialize All Required Datasets for Data Analysis ###
 # Create Pandas DataFrame of SMILES and BBB permeability label
-BBB_data = curate_bbb_data(raw_bbb_data())
+BBB_data = pd.read_csv('data/processed/smiles_dataset.csv')
 
-# Calculate the logP, TPSA, molecular weight, NHOH, NO count
+# Calculate the logP, TPSA, molecular weight, NHOH, NO count of each SMILES
 BBB_data = calculate_chem_features(BBB_data)
 
 
@@ -41,6 +41,8 @@ print(f"BBB- Count: {(BBB_data['labels'] == 0).sum()}")
 
 
 ### Generate Violin Plots to show the distribution of each molecular property for BBB+ and BBB- class ###
+plt.figure(figsize=(12, 10))
+
 # Violin Plot of logP for BBB+ and BBB-
 label_names = {0: 'BBB-', 1: 'BBB+'}
 plt.subplot(2, 2, 1)
@@ -95,7 +97,9 @@ plt.show()
 
 
 ### Outlier Detection for Molecular Properties ###
-def outlier_detection(data, label, property): 
+def outlier_detection(data: pd.DataFrame, 
+                      label: int, 
+                      property: str): 
     '''
     Uses the 1.5 IQR Rule to calculate outliers for the formatted BBB dataset
     
@@ -110,9 +114,12 @@ def outlier_detection(data, label, property):
         A printed statement of numerical ranges that are classified as outliers
     ''' 
 
+    # Calculate Q1, Q3, and IQR
     q1 = np.percentile(data.loc[data['labels']==label, property], 25)
     q3 = np.percentile(data.loc[data['labels']==label, property], 75)
     iqr = q3 - q1
+
+    # Calculate the outlier ranges and print
     if label == 1:
       print(f"BBB+ {property} Outlier: Anything below {(q1 - 1.5*iqr):.3f}" 
             f" and above {(q3 + 1.5*iqr):.3f} are outliers")

@@ -1,8 +1,8 @@
-# from dataset import curate_bbb_data
 from rdkit.Chem.SaltRemover import SaltRemover
 from src.data_processing.dataset_fn import raw_bbb_data
 from rdkit import Chem, RDLogger
-import seaborn as sns, matplotlib.pyplot as plt
+import seaborn as sns, matplotlib.pyplot as plt, pandas as pd
+
 
 # Import raw data without any curation methods
 BBB_data = raw_bbb_data() 
@@ -28,8 +28,14 @@ print()
 
 # Plot a Pie Chart representing the number of nonunique SMILES
 explode = (0.1, 0)
-plt.pie(labels=['Non-unique SMILES\n(3,127)', 'Unique SMILES\n(10,635)'], x=[nonunique_SMILES.sum(), len(BBB_data['SMILES'])-nonunique_SMILES.sum()]
-        ,autopct='%1.1f%%', startangle=90, wedgeprops={'edgecolor': 'white', 'linewidth': 2}, textprops={'fontsize': 14}, shadow=True, explode=explode
+plt.pie(labels=[f'Non-unique SMILES\n({nonunique_SMILES.sum()})', f'Unique SMILES\n({len(BBB_data['SMILES'])-nonunique_SMILES.sum()})'], 
+        x=[nonunique_SMILES.sum(), len(BBB_data['SMILES'])-nonunique_SMILES.sum()],
+        autopct='%1.1f%%',
+        startangle=90, 
+        wedgeprops={'edgecolor': 'white', 'linewidth': 2}, 
+        textprops={'fontsize': 14}, 
+        shadow=True, 
+        explode=explode
         ,colors=['#FF6188', '#AB9DF2'])
 plt.legend(bbox_to_anchor=(1, 0, 0.5, 1))
 plt.show()
@@ -74,9 +80,15 @@ print(f"Number of Non Canonical + Isomeric SMILES: {len(BBB_data['SMILES'])-cano
 print()
 
 # Plot the number of canonical and non canonical SMILES on a pie chart
-plt.pie(labels=['Canonical SMILES\n(2,493)', 'Noncanonical SMILES\n(11,269)'], x=[canonical_smiles_count, len(BBB_data['SMILES'])-canonical_smiles_count]
-        ,autopct='%1.1f%%', startangle=90, wedgeprops={'edgecolor': 'white', 'linewidth': 2}, textprops={'fontsize': 14}, shadow=True, explode=explode
-        ,colors=['#FF6188', '#AB9DF2'])
+plt.pie(labels=[f'Canonical SMILES\n({canonical_smiles_count})', f'Noncanonical SMILES\n({len(BBB_data['SMILES'])-canonical_smiles_count})'], 
+        x=[canonical_smiles_count, len(BBB_data['SMILES'])-canonical_smiles_count],
+        autopct='%1.1f%%', 
+        startangle=90, 
+        wedgeprops={'edgecolor': 'white', 'linewidth': 2}, 
+        textprops={'fontsize': 14}, 
+        shadow=True, 
+        explode=explode,
+        colors=['#FF6188', '#AB9DF2'])
 plt.legend(bbox_to_anchor=(1, 0, 0.5, 1))
 plt.tight_layout()
 plt.show()
@@ -129,16 +141,21 @@ for mol, smiles in zip(BBB_data['Mol'], BBB_data['SMILES']):
 
 ### Check for SMILES with atomic numbers greater than 20 ### 
 non_organic_count = 0 
+allowed_atomic_nums = {1, 5, 6, 7, 8, 9, 15, 16, 17, 35, 53}
 for mol in BBB_data['Mol']:
     if mol is not None: 
         for atom in mol.GetAtoms(): 
-            if atom.GetAtomicNum() > 20:
+            if atom.GetAtomicNum() not in allowed_atomic_nums:
                 non_organic_count += 1
                 break  
 
 
 ### Plotting Function to Visualize SMILES Analysis ###
-def plot_bar_graph(data, property_count, name_with_property, name_without_property, palette):
+def plot_bar_graph(data: pd.DataFrame, 
+                   property_count: int, 
+                   name_with_property: str, 
+                   name_without_property: str, 
+                   palette: str):
     '''
     Plots a bar graph that contains the number of SMILES with the molecular propety and without 
     the molecular property given the formatted BBB dataset

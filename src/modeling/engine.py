@@ -2,6 +2,7 @@ import torch
 from tqdm import tqdm
 from src.utils import calculate_mcc
 
+
 def train_step(model: torch.nn.Module, 
                train_dataloader: torch.utils.data.DataLoader, 
                optimizer: torch.optim.Optimizer,
@@ -96,7 +97,7 @@ def test_step(model: torch.nn.Module,
 
             # Calculate the loss 
             loss = output.loss 
-            test_loss += loss 
+            test_loss += loss
 
             # Calculate the accuracy 
             test_logits = output.logits 
