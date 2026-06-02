@@ -78,11 +78,10 @@ if args.tune:
     # Maximize the val_mcc score during hyperparameter optimization
     study = optuna.create_study(direction="maximize")
     study.optimize(lambda trial: objective(trial, 
-                                           model, 
+                                           configs, 
                                            train_dataloader, 
                                            test_dataloader, 
-                                           validation_dataloader, 
-                                           optimizer, 
+                                           validation_dataloader,  
                                            device, 
                                            NUM_EPOCHS), 
                                         n_trials=args.tune)
@@ -131,12 +130,14 @@ if args.train:
 
 # Save model weights into save_models based on argument
 if args.save:
-    save_model(model.state_dict(), 'chemberta')
+    model_name = configs['model_information']['model_name']
+    save_model(model.state_dict(), model_name)
 
 
 # Test the saved model on validation dataset based on argument
 if args.validate: 
-    saved_model = load_model(model, 'saved_models/chemberta.pth')
+    model_name = configs['model_information']['model_name']
+    saved_model = load_model(model, f'saved_models/{model_name}.pth')
     val_loss, val_mcc, val_confusion_matrix = test_on_validation_set(saved_model, device, validation_dataloader)
     print(f'Validation Loss: {val_loss.item():.3f}')
     print(f'Validation MCC Score: {val_mcc:.3f}')

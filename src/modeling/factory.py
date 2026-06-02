@@ -16,7 +16,7 @@ def create_model(config_file):
     # Obtain model name from the inputted config file
     model_name = config_file['model_information']['model_name']
 
-    # Run a loop to return the appropriate model and tokenizer associated with the model name 
+    # Run an if/else statement to return the appropriate model and tokenizer associated with the model name 
     if model_name == 'ChemBERTa-77M-MTR': 
         tokenizer = AutoTokenizer.from_pretrained("DeepChem/ChemBERTa-77M-MTR")
         model = RobertaForSequenceClassification.from_pretrained("DeepChem/ChemBERTa-77M-MTR"
@@ -47,7 +47,9 @@ def create_model(config_file):
         model = AutoModelForSequenceClassification.from_pretrained("zjunlp/MolGen-large", 
                                                       num_labels=2, 
                                                       use_safetensors=True)
-        
+    else: 
+        raise ValueError('Model name not recognized')
+
     return model, tokenizer
 
 
@@ -66,8 +68,10 @@ def dataset_loader(config_file):
     # Obtain dataset name from the inputted config file
     dataset_name = config_file['dataset_information']['dataset']
 
-    # Run a loop to return the appropriate dataset loading function for the dataset
+    # Run an if/else statement to return the appropriate dataset loading function for the dataset
     if dataset_name == 'data/processed/smiles_dataset.csv': 
         return 'SMILES'  
     elif dataset_name == 'data/processed/selfies_dataset.csv':
         return 'SELFIES'
+    else: 
+        raise ValueError('Dataset path not recognized')

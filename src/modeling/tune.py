@@ -1,13 +1,13 @@
 import optuna, torch
 from src.utils import test_on_validation_set
+from src.modeling.factory import create_model
 
 
 def objective(trial, 
-              model: torch.nn.Module, 
+              config_file, 
               train_dataloader: torch.utils.data.DataLoader, 
               test_dataloader: torch.utils.data.DataLoader, 
               validation_dataloader: torch.utils.data.DataLoader, 
-              optimizer: torch.optim.Optimizer, 
               device: torch.device, 
               num_epochs: int): 
     '''
@@ -16,11 +16,10 @@ def objective(trial,
 
     Args: 
         trial: Optuna object that suggests hyperparameter values
-        model: The PyTorch model whose hyperparameter is being optimized
+        config_file: The configuration file containing the model information
         train_dataloader: The PyTorch dataloader to train the model with 
         test_dataloader: The PyTorch dataloader to test the model with 
         validation_dataloader: The PyTorch dataloader to validate the model with 
-        optimizer: The PyTorch optimizer used to minimize the loss function
         device: Device used for training and testing
         num_epochs: The number of epochs to train and test the model for
 
@@ -28,6 +27,10 @@ def objective(trial,
         The final val_mcc score after training and testing on the proposed hyperparameter value
     
     '''
+
+    # Instantiate model
+    model, tokenizer = create_model(config_file)
+    model.to(device)
 
     # Define hyperparameter to be optimized
     lr = trial.suggest_float('lr', 1e-5, 1e-1, log=True)
