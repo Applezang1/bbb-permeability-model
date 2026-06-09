@@ -1,4 +1,4 @@
-import pandas as pd, selfies as sf
+import pandas as pd, selfies as sf, numpy as np
 from rdkit import Chem, RDLogger
 from rdkit.Chem import Descriptors, rdMolDescriptors
 from rdkit.Chem.SaltRemover import SaltRemover
@@ -13,6 +13,7 @@ def raw_bbb_data():
         A 'BBB_dataset' containing each compound's SMILES and its respective BBB permeability label 
         before any curation methods
     '''
+
     # Curate LightBBB Dataset
     light_dataset = pd.read_csv('data/raw/LightBBB.csv', 
                                 usecols=['SMILES', 'labels'])
@@ -173,7 +174,6 @@ def curate_bbb_data(BBB_dataset: pd.DataFrame):
 def calculate_chem_features(BBB_data: pd.DataFrame):
     '''
     Calculates the logP, TPSA, molecular weight, NHOH, and NO count of each SMILES in the dataset. 
-    Additionally filters out invalid SMILES strings from the inputted data
 
     Args: 
         BBB_data: The Pandas DataFrame from curate_bbb_data()
@@ -210,27 +210,106 @@ def calculate_chem_features(BBB_data: pd.DataFrame):
 
     return BBB_data
 
+
 def convert_to_selfies(BBB_data: pd.DataFrame): 
     '''
     Converts the SMILES column in the dataset from curate_bbb_data() to its SELFIES representation
 
     Args: 
-        data: The Pandas DataFrame from curate_bbb_data()
+        BBB_data: The Pandas DataFrame from curate_bbb_data()
 
     Returns: 
         A 'BBB_data' with a SELFIES and BBB permeability label column
     '''
     
+    # Initialize an empty selfies_list for storage
     selfies_list = []
 
+    # Loop through the dataset and convert the SMILES to SELFIES
     for smiles in BBB_data['SMILES']: 
         selfies = sf.encoder(smiles) 
         selfies_list.append(selfies)
     
+    # Update the SMILES column based on the computed SELFIES
     BBB_data['SELFIES'] = selfies_list
     BBB_data = BBB_data.drop(columns='SMILES')
 
     return BBB_data 
+
+
+def augment_dataset(data, 
+                    num_augmentations: int, 
+                    column_name: str):
+    '''
+    Augment the SMILES/SELFIES training dataset to include alternate representations of the same SMILES/SELFIES
+
+    Args: 
+        data: The training HuggingFace DataFrame originating from curate_bbb_data()
+        num_augmentations: The number of times to perform data augmentation
+        column_name: The column name representing the chemicals in the dataset (SMILES/SELFIES)
+
+    Returns: 
+        A training HuggingFace DataFrame with augmented data
+    ''' 
+
+    # Prevent error messages from invalid SMILES configurations
+    RDLogger.DisableLog('rdApp.*')
+
+    # Convert the inputted HuggingFace DataFrame into a Pandas DataFrame for compatability
+    data = data.to_pandas()
+    rng = np.random.default_rng() 
+
+    # Initialize lists for storage
+    augmented_list = []
+    labels_list = []
+
+    if column_name == 'SMILES':
+        # Loop through the dataset a set number of times to augment the SMILES data 
+        for i in range(num_augmentations):
+            for smiles, label in zip(data[column_name], data['labels']):
+                # Augment the SMILES string
+                mol = Chem.MolFromSmiles(smiles)
+                new_order = list(range(mol.GetNumAtoms()))
+                rng.shuffle(new_order)
+                new_mol = Chem.RenumberAtoms(mol,new_order)
+                new_smiles = Chem.MolToSmiles(new_mol, canonical=False)
+
+                # Store the smiles and labels into respective lists
+                augmented_list.append(new_smiles)
+                labels_list.append(label)
+
+    elif column_name == 'SELFIES':
+        # Loop through the dataset a set number of times to augment the SELFIES data
+        for i in range(num_augmentations):
+            for selfies, label in zip(data[column_name], data['labels']):
+                # Convert the SELFIES back to SMILES
+                smiles = sf.decoder(selfies)
+
+                # Augment the SMILES string
+                mol = Chem.MolFromSmiles(smiles)
+                new_order = list(range(mol.GetNumAtoms()))
+                rng.shuffle(new_order)
+                new_mol = Chem.RenumberAtoms(mol,new_order)
+                new_smiles = Chem.MolToSmiles(new_mol, canonical=False)
+
+                # Convert the augmented SMILES back to SELFIES
+                new_selfies = sf.encoder(new_smiles)
+
+                # Store selfies and label into respective lists
+                augmented_list.append(new_selfies)
+                labels_list.append(label)
+
+    # Store the augmented data into a dictionary
+    augmented_data = {
+        column_name: augmented_list,
+        'labels': labels_list
+    }
+
+    # Create a new Pandas DataFrame with the augmented data
+    augmented_BBB_data = pd.DataFrame(augmented_data)
+
+
+    return pd.concat([data, augmented_BBB_data], ignore_index=True)
 
 
 
