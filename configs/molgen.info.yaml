@@ -5,6 +5,7 @@ hyperparameters:
   NUM_WORKERS: 0
   NUM_EPOCHS: 5
   LR: 0.001
+  NUM_AUGMENTATIONS: 3
 model_information: 
   model_name: Mol-Gen
 dataset_information: 
