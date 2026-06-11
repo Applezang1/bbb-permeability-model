@@ -21,7 +21,8 @@ def create_model(config_file):
         tokenizer = AutoTokenizer.from_pretrained("DeepChem/ChemBERTa-77M-MTR")
         model = RobertaForSequenceClassification.from_pretrained("DeepChem/ChemBERTa-77M-MTR"
                                                          ,num_labels=2
-                                                         ,use_safetensors=True)
+                                                         ,use_safetensors=True
+                                                         ,classifier_dropout=0.1)
     elif model_name == 'MolFormer-XL':
         model = AutoModelForSequenceClassification.from_pretrained("ibm/MoLFormer-XL-both-10pct", 
                                           deterministic_eval=True, 
