@@ -2,13 +2,15 @@ from datasets import Dataset
 from torch.utils.data import DataLoader
 import pandas as pd, torch
 from transformers import PreTrainedTokenizerBase
+from src.data_processing.dataset_fn import augment_dataset
 
 
 def create_dataset(data: pd.DataFrame, 
                    column_name: str,
                    test_validation_split: float, 
                    validation_split: float, 
-                   tokenizer: PreTrainedTokenizerBase): 
+                   tokenizer: PreTrainedTokenizerBase, 
+                   num_augmentations: int): 
     '''
     Creates training, testing, and validation PyTorch datasets from the inputted Pandas DataFrame 
 
@@ -19,6 +21,7 @@ def create_dataset(data: pd.DataFrame,
         a column with BBB permeability label (name: labels)
         test_validation_split: Percentage of data to be used for testing and validation 
         validation_split: Percentage of data to be used for validation from the testing and validation dataset
+        num_augmentations: The number of times to perform data augmentation on the training dataset
         
     Returns: 
         Training, testing, and validation SMILES/SELFIES PyTorch datasets
@@ -26,7 +29,25 @@ def create_dataset(data: pd.DataFrame,
 
     # Load inputted Pandas DataFrame into a dataset
     dataset = Dataset.from_pandas(data) 
-    
+
+    # Split the dataset into training and testing + validation datasets
+    dataset = dataset.class_encode_column('labels')
+    split_dataset = dataset.train_test_split(test_size=test_validation_split, 
+                                             stratify_by_column='labels')
+    train_dataset = split_dataset['train']
+
+    # Augment the training dataset 
+    train_dataset = augment_dataset(train_dataset, 
+                                    num_augmentations, 
+                                    column_name)
+    train_dataset = Dataset.from_pandas(train_dataset)
+
+    # Split the testing + validation dataset into a testing and validation dataset
+    split_dataset = split_dataset['test'].train_test_split(test_size=validation_split, 
+                                                           stratify_by_column='labels')
+    test_dataset = split_dataset['train']
+    validation_dataset = split_dataset['test']
+
     # Tokenize the dataset
     def tokenization(batch): 
         '''Tokenizes inputs'''
@@ -35,20 +56,14 @@ def create_dataset(data: pd.DataFrame,
                          truncation=True,
                          max_length=128,)
     
-    dataset = dataset.map(tokenization, batched=True)
-    dataset = dataset.remove_columns(column_name)
+    train_dataset = train_dataset.map(tokenization, batched=True)
+    test_dataset = test_dataset.map(tokenization, batched=True)
+    validation_dataset = validation_dataset.map(tokenization, batched=True)
 
-    # Split the dataset into training and testing + validation datasets
-    dataset = dataset.class_encode_column('labels')
-    split_dataset = dataset.train_test_split(test_size=test_validation_split, 
-                                             stratify_by_column='labels')
-    train_dataset = split_dataset['train']
-
-    # Split the testing + validation dataset into a testing and validation dataset
-    split_dataset = split_dataset['test'].train_test_split(test_size=validation_split, 
-                                                   stratify_by_column='labels')
-    test_dataset = split_dataset['train']
-    validation_dataset = split_dataset['test']
+    # Remove unnecessary columns
+    train_dataset = train_dataset.remove_columns(column_name)
+    test_dataset = test_dataset.remove_columns(column_name)
+    validation_dataset = validation_dataset.remove_columns(column_name)
 
     # Convert HuggingFace dataset to a PyTorch dataset
     train_dataset.set_format(type='torch', 

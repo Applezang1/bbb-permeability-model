@@ -25,7 +25,6 @@ def objective(trial,
 
     Returns: 
         The final val_mcc score after training and testing on the proposed hyperparameter value
-    
     '''
 
     # Instantiate model

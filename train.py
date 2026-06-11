@@ -37,6 +37,7 @@ BATCH_SIZE = configs['hyperparameters']['BATCH_SIZE']
 NUM_WORKERS = configs['hyperparameters']['NUM_WORKERS']
 NUM_EPOCHS = configs['hyperparameters']['NUM_EPOCHS']
 LR = configs['hyperparameters']['LR']
+NUM_AUGMENTATIONS = configs['hyperparameters']['NUM_AUGMENTATIONS']
 
 
 # Create device-agnostic code 
@@ -48,7 +49,8 @@ model, tokenizer = create_model(configs)
 model.to(device)
 
 optimizer = torch.optim.SGD(params=model.parameters(), 
-                            lr=LR)
+                            lr=LR, 
+                            weight_decay=1e-3)
 
 
 ### Curate BBB data ###
@@ -62,7 +64,8 @@ train_dataset, test_dataset, validation_dataset = create_dataset(BBB_data,
                                                                  column_name,
                                                                  TEST_VALIDATION_SPLIT,
                                                                  VALIDATION_SPLIT, 
-                                                                 tokenizer)
+                                                                 tokenizer, 
+                                                                 NUM_AUGMENTATIONS)
 
 
 ### Create training and testing dataloaders ###
