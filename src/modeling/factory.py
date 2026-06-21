@@ -1,5 +1,5 @@
 from transformers.models.roberta.modeling_roberta import RobertaForSequenceClassification
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, BartForSequenceClassification
 
 
 def create_model(config_file): 
@@ -34,20 +34,23 @@ def create_model(config_file):
     elif model_name == 'BARTSmiles': 
         model = AutoModelForSequenceClassification.from_pretrained("gayane/BARTSmiles", 
                                                                    num_labels=2, 
-                                                                   use_safetensors=True)
+                                                                   use_safetensors=True, 
+                                                                   classifier_dropout=0.1)
         tokenizer = AutoTokenizer.from_pretrained("gayane/BARTSmiles", 
                                                   add_prefix_space=True) 
         tokenizer.pad_token_id = 0
         tokenizer.pad_token = "<s>"
     elif model_name == 'SELFIES-TED':
-        tokenizer = AutoTokenizer.from_pretrained("ibm/materials.selfies-ted")
-        model = AutoModelForSequenceClassification.from_pretrained("ibm/materials.selfies-ted", 
-                                                                   num_labels=2) 
+        tokenizer = AutoTokenizer.from_pretrained("ibm-research/materials.selfies-ted")
+        model = BartForSequenceClassification.from_pretrained("ibm-research/materials.selfies-ted", 
+                                                                   num_labels=2, 
+                                                                   classifier_dropout=0.1)
     elif model_name == 'Mol-Gen': 
         tokenizer = AutoTokenizer.from_pretrained("zjunlp/MolGen-large")
         model = AutoModelForSequenceClassification.from_pretrained("zjunlp/MolGen-large", 
                                                       num_labels=2, 
-                                                      use_safetensors=True)
+                                                      use_safetensors=True, 
+                                                      classifier_dropout=0.1)
     else: 
         raise ValueError('Model name not recognized')
 
