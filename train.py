@@ -65,7 +65,8 @@ train_dataset, test_dataset, validation_dataset = create_dataset(BBB_data,
                                                                  TEST_VALIDATION_SPLIT,
                                                                  VALIDATION_SPLIT, 
                                                                  tokenizer, 
-                                                                 NUM_AUGMENTATIONS)
+                                                                 NUM_AUGMENTATIONS, 
+                                                                 configs['model_information']['model_name'])
 
 
 ### Create training and testing dataloaders ###
@@ -120,6 +121,7 @@ if args.train:
     plt.ylabel('Loss')
     plt.xlabel('Number of Epochs')
     plt.show()
+    plt.savefig('loss.png', dpi=300, bbox_inches='tight')
 
     # Plot the change in training and testing mcc over epochs 
     fig = plt.figure(figsize=(8, 8))
@@ -129,6 +131,7 @@ if args.train:
     plt.xlabel('Number of Epochs')
     plt.legend()
     plt.show()
+    plt.savefig('mcc.png', dpi=300, bbox_inches='tight')
 
 
 # Save model weights into save_models based on argument
