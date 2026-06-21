@@ -237,16 +237,18 @@ def convert_to_selfies(BBB_data: pd.DataFrame):
     return BBB_data 
 
 
-def augment_dataset(data, 
+def augment_dataset(train_data, 
                     num_augmentations: int, 
-                    column_name: str):
+                    column_name: str, 
+                    model_name: str):
     '''
     Augment the SMILES/SELFIES training dataset to include alternate representations of the same SMILES/SELFIES
 
     Args: 
-        data: The training HuggingFace DataFrame originating from curate_bbb_data()
+        train_data: The training HuggingFace DataFrame originating from curate_bbb_data()
         num_augmentations: The number of times to perform data augmentation
         column_name: The column name representing the chemicals in the dataset (SMILES/SELFIES)
+        model_name: The name of the model that will be trained by the training dataset
 
     Returns: 
         A training HuggingFace DataFrame with augmented data
@@ -256,7 +258,7 @@ def augment_dataset(data,
     RDLogger.DisableLog('rdApp.*')
 
     # Convert the inputted HuggingFace DataFrame into a Pandas DataFrame for compatability
-    data = data.to_pandas()
+    train_data = train_data.to_pandas()
     rng = np.random.default_rng() 
 
     # Initialize lists for storage
@@ -266,7 +268,7 @@ def augment_dataset(data,
     if column_name == 'SMILES':
         # Loop through the dataset a set number of times to augment the SMILES data 
         for i in range(num_augmentations):
-            for smiles, label in zip(data[column_name], data['labels']):
+            for smiles, label in zip(train_data[column_name], train_data['labels']):
                 # Augment the SMILES string
                 mol = Chem.MolFromSmiles(smiles)
                 new_order = list(range(mol.GetNumAtoms()))
@@ -281,7 +283,7 @@ def augment_dataset(data,
     elif column_name == 'SELFIES':
         # Loop through the dataset a set number of times to augment the SELFIES data
         for i in range(num_augmentations):
-            for selfies, label in zip(data[column_name], data['labels']):
+            for selfies, label in zip(train_data[column_name], train_data['labels']):
                 # Convert the SELFIES back to SMILES
                 smiles = sf.decoder(selfies)
 
@@ -308,8 +310,37 @@ def augment_dataset(data,
     # Create a new Pandas DataFrame with the augmented data
     augmented_BBB_data = pd.DataFrame(augmented_data)
 
+    # Implement required spacing to SELFIES strings if the model name is SELFIES-TED
+    if model_name == 'SELFIES-TED':
+        augmented_BBB_data = space_selfies_strings(augmented_BBB_data)
 
-    return pd.concat([data, augmented_BBB_data], ignore_index=True)
+
+    return pd.concat([train_data, augmented_BBB_data], ignore_index=True)
+
+
+def space_selfies_strings(data: pd.DataFrame):
+    '''
+    Spaces all the SELFIES tokens for each SELFIES in the SELFIES column of the inputted DataFrame
+
+    Args: 
+        data: The Pandas DataFrame to space the SELFIES tokens on
+
+    Returns: 
+        A Pandas DataFrame with spaced SELFIES strings
+    ''' 
+    
+    # Initialize list to store spaced selfies strings
+    spaced_selfies = []
+
+    # Loop through the SELFIES column to space SELFIES tokens
+    for selfies in data['SELFIES']: 
+        new_selfies = selfies.replace("][", "] [")
+        spaced_selfies.append(new_selfies)
+
+    # Create a new Pandas DataFrame with spaced SELFIES strings
+    data['SELFIES'] = spaced_selfies 
+
+    return data
 
 
 

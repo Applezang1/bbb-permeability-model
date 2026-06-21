@@ -2,7 +2,7 @@ from datasets import Dataset
 from torch.utils.data import DataLoader
 import pandas as pd, torch
 from transformers import PreTrainedTokenizerBase
-from src.data_processing.dataset_fn import augment_dataset
+from src.data_processing.dataset_fn import augment_dataset, space_selfies_strings
 
 
 def create_dataset(data: pd.DataFrame, 
@@ -10,7 +10,8 @@ def create_dataset(data: pd.DataFrame,
                    test_validation_split: float, 
                    validation_split: float, 
                    tokenizer: PreTrainedTokenizerBase, 
-                   num_augmentations: int): 
+                   num_augmentations: int, 
+                   model_name: str): 
     '''
     Creates training, testing, and validation PyTorch datasets from the inputted Pandas DataFrame 
 
@@ -22,6 +23,7 @@ def create_dataset(data: pd.DataFrame,
         test_validation_split: Percentage of data to be used for testing and validation 
         validation_split: Percentage of data to be used for validation from the testing and validation dataset
         num_augmentations: The number of times to perform data augmentation on the training dataset
+        model_name: The name of the model that will be trained on the training dataset
         
     Returns: 
         Training, testing, and validation SMILES/SELFIES PyTorch datasets
@@ -37,16 +39,31 @@ def create_dataset(data: pd.DataFrame,
     train_dataset = split_dataset['train']
 
     # Augment the training dataset 
-    train_dataset = augment_dataset(train_dataset, 
-                                    num_augmentations, 
-                                    column_name)
-    train_dataset = Dataset.from_pandas(train_dataset)
+    if num_augmentations != 0:
+        train_dataset = augment_dataset(train_dataset, 
+                                        num_augmentations, 
+                                        column_name, 
+                                        model_name)
+        train_dataset = Dataset.from_pandas(train_dataset)
 
     # Split the testing + validation dataset into a testing and validation dataset
     split_dataset = split_dataset['test'].train_test_split(test_size=validation_split, 
                                                            stratify_by_column='labels')
     test_dataset = split_dataset['train']
     validation_dataset = split_dataset['test']
+
+    # Implement required spacing to SELFIES strings if the model is SELFIES-TED
+    if model_name == 'SELFIES-TED':
+        # Implement spacing to testing dataset
+        test_dataset = test_dataset.to_pandas()
+        test_dataset = space_selfies_strings(test_dataset)
+        test_dataset = Dataset.from_pandas(test_dataset)
+
+        # Implement spacing to validation dataset
+        validation_dataset = validation_dataset.to_pandas()
+        validation_dataset = space_selfies_strings(validation_dataset)
+        validation_dataset = Dataset.from_pandas(validation_dataset)
+        
 
     # Tokenize the dataset
     def tokenization(batch): 
