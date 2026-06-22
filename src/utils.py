@@ -74,59 +74,61 @@ def calculate_mcc(TP: int,
     return mcc
 
 
-def test_on_validation_set(model: torch.nn.Module, 
-                           device: torch.device, 
-                           validation_dataloader: torch.utils.data.DataLoader):
+def test_on_testing_set(model: torch.nn.Module, 
+                        device: torch.device, 
+                        test_dataloader: torch.utils.data.DataLoader):
     '''
-    Validates the model performance on the validation dataloader
+    Test model performance on the test dataloader
 
     Args: 
-        model: The PyTorch model to validate 
-        validation_dataloader: The Pytorch dataloader to validate the model with
-        device: Device used for validation
+        model: The PyTorch model to test 
+        testing_dataloader: The Pytorch dataloader to test the model with
+        device: Device used for testing
 
     Returns: 
-        The validation loss, mcc score, and a confusion matrix of TP, FP, FN, TN
+        The testing loss, mcc score, and a confusion matrix of TP, FP, FN, TN
     '''
 
     # Put model in evaluation mode
     model.eval()
-    val_loss = 0
-    val_tp, val_tn, val_fp, val_fn = 0, 0, 0, 0 
 
-    # Run the validation loop for each batch in the validation dataloader
+    # Initialize metric values
+    test_loss = 0
+    test_tp, test_tn, test_fp, test_fn = 0, 0, 0, 0 
+
+    # Run the testing loop for each batch in the testing dataloader
     with torch.inference_mode():
-        for batch, input in enumerate(validation_dataloader): 
+        for batch, input in enumerate(test_dataloader): 
             # Put data on target device
             input = {k: v.to(device) for k, v in input.items()} 
 
             # Compute a forward pass 
             output = model(**input) 
 
-            # Calculate the validation loss 
+            # Calculate the testing loss 
             loss = output.loss 
-            val_loss += loss
+            test_loss += loss
 
-            # Calculate validation mcc score 
-            val_logit = output.logits 
-            val_pred_label = val_logit.argmax(dim=1) 
+            # Calculate testing mcc score 
+            test_logit = output.logits 
+            test_pred_label = test_logit.argmax(dim=1) 
 
-            for idx in range(len(val_pred_label)):
-                if val_pred_label[idx] == 1 and input['labels'][idx] == 1: 
-                    val_tp += 1 
-                elif val_pred_label[idx] == 1 and input['labels'][idx] == 0: 
-                    val_fp += 1 
-                elif val_pred_label[idx] == 0 and input['labels'][idx] == 0: 
-                    val_tn += 1 
-                elif val_pred_label[idx] == 0 and input['labels'][idx] == 1: 
-                    val_fn += 1
+            for idx in range(len(test_pred_label)):
+                if test_pred_label[idx] == 1 and input['labels'][idx] == 1: 
+                    test_tp += 1 
+                elif test_pred_label[idx] == 1 and input['labels'][idx] == 0: 
+                    test_fp += 1 
+                elif test_pred_label[idx] == 0 and input['labels'][idx] == 0: 
+                    test_tn += 1 
+                elif test_pred_label[idx] == 0 and input['labels'][idx] == 1: 
+                    test_fn += 1
 
         # Calculate final validattion loss and mcc score
-        val_mcc = calculate_mcc(val_tp, val_tn, val_fp, val_fn) 
-        val_loss = val_loss / len(validation_dataloader) 
-        val_confusion_matrix = [val_tp, val_tn, val_fp, val_fn]
+        test_mcc = calculate_mcc(test_tp, test_tn, test_fp, test_fn) 
+        test_loss = test_loss / len(test_dataloader) 
+        test_confusion_matrix = [test_tp, test_tn, test_fp, test_fn]
         
-    return val_loss, val_mcc, val_confusion_matrix
+    return test_loss, test_mcc, test_confusion_matrix
 
 
 def plot_confusion_matrix(confusion_matrix_values: list[int]):
@@ -161,7 +163,7 @@ def plot_confusion_matrix(confusion_matrix_values: list[int]):
                 )
     plt.ylabel('Predicted Values')
     plt.xlabel('Actual Values')
-    plt.title('Validation Confusion Matrix')
+    plt.title('Testing Confusion Matrix')
     plt.show()
 
 
