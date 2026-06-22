@@ -1,11 +1,12 @@
 hyperparameters: 
-  TEST_VALIDATION_SPLIT: 0.2
-  VALIDATION_SPLIT: 0.5
+  TEST_SPLIT: 0.2
   BATCH_SIZE: 32 
   NUM_WORKERS: 0
   NUM_EPOCHS: 25
   LR: 0.012610284472465557
   NUM_AUGMENTATIONS: 3
+  WEIGHT_DECAY: 0
+  NUM_SPLITS: 5
 model_information: 
   model_name: SELFIES-TED
 dataset_information: 
