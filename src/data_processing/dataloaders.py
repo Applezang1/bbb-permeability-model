@@ -2,68 +2,81 @@ from datasets import Dataset
 from torch.utils.data import DataLoader
 import pandas as pd, torch
 from transformers import PreTrainedTokenizerBase
-from src.data_processing.dataset_fn import augment_dataset, space_selfies_strings
+from src.data_processing.dataset_fn import augment_data
 
 
 def create_dataset(data: pd.DataFrame, 
-                   column_name: str,
-                   test_validation_split: float, 
-                   validation_split: float, 
-                   tokenizer: PreTrainedTokenizerBase, 
-                   num_augmentations: int, 
-                   model_name: str): 
+                   test_split: float): 
     '''
-    Creates training, testing, and validation PyTorch datasets from the inputted Pandas DataFrame 
+    Creates training + validation and testing PyTorch datasets from the inputted Pandas DataFrame 
 
     Args: 
-        tokenizer: Tokenizer to use for creating datasets 
-        column_name: The column name of the inputted PyTorch DataFrame for molecules (SMILES/SELFIES)
-        data: Pandas DataFrame specifically with a column of SMILES/SELFIES and 
+        data: The Pandas DataFrame specifically with a column of SMILES/SELFIES and 
         a column with BBB permeability label (name: labels)
-        test_validation_split: Percentage of data to be used for testing and validation 
-        validation_split: Percentage of data to be used for validation from the testing and validation dataset
-        num_augmentations: The number of times to perform data augmentation on the training dataset
-        model_name: The name of the model that will be trained on the training dataset
+        test_split: Percentage of data to be used for testing from the entire dataset
         
     Returns: 
-        Training, testing, and validation SMILES/SELFIES PyTorch datasets
+        Training + validation and testing SMILES/SELFIES HuggingFace datasets
     ''' 
 
-    # Load inputted Pandas DataFrame into a dataset
+    # Load inputted Pandas DataFrame into a HuggingFace dataset
     dataset = Dataset.from_pandas(data) 
 
-    # Split the dataset into training and testing + validation datasets
+    # Split the dataset into training + validation and testing datasets
     dataset = dataset.class_encode_column('labels')
-    split_dataset = dataset.train_test_split(test_size=test_validation_split, 
+    split_dataset = dataset.train_test_split(test_size=test_split, 
                                              stratify_by_column='labels')
-    train_dataset = split_dataset['train']
+    train_val_dataset = split_dataset['train']
+    testing_dataset = split_dataset['test']
 
-    # Augment the training dataset 
-    if num_augmentations != 0:
-        train_dataset = augment_dataset(train_dataset, 
-                                        num_augmentations, 
-                                        column_name, 
-                                        model_name)
-        train_dataset = Dataset.from_pandas(train_dataset)
 
-    # Split the testing + validation dataset into a testing and validation dataset
-    split_dataset = split_dataset['test'].train_test_split(test_size=validation_split, 
-                                                           stratify_by_column='labels')
-    test_dataset = split_dataset['train']
-    validation_dataset = split_dataset['test']
-
-    # Implement required spacing to SELFIES strings if the model is SELFIES-TED
-    if model_name == 'SELFIES-TED':
-        # Implement spacing to testing dataset
-        test_dataset = test_dataset.to_pandas()
-        test_dataset = space_selfies_strings(test_dataset)
-        test_dataset = Dataset.from_pandas(test_dataset)
-
-        # Implement spacing to validation dataset
-        validation_dataset = validation_dataset.to_pandas()
-        validation_dataset = space_selfies_strings(validation_dataset)
-        validation_dataset = Dataset.from_pandas(validation_dataset)
+    return train_val_dataset, testing_dataset
         
+
+def augment_dataset(train_dataset: Dataset,
+                    num_augmentations: int, 
+                    column_name: str, 
+                    model_name: str):
+    '''
+    Augments the inputted training HuggingFace dataset 
+
+    Args: 
+        train_dataset: The training HuggingFace dataset to perform data augmentation on
+        num_augmentations: The number of data augmentations to perform on the training
+        dataset 
+        column_name: The column name representing the chemicals in the dataset (SMILES/SELFIES)
+        model_name: The name of the model that will be trained on this dataset
+        
+    Returns: 
+        The augmented training HuggingFace dataset
+    ''' 
+    
+    # Augment the inputted dataset 
+    if num_augmentations != 0:
+        train_dataset = augment_data(train_dataset, 
+                                     num_augmentations, 
+                                     column_name, 
+                                     model_name)
+        train_dataset = Dataset.from_pandas(train_dataset)   
+
+
+    return train_dataset
+
+
+def tokenize_dataset(dataset: Dataset,
+                     tokenizer: PreTrainedTokenizerBase, 
+                     column_name: str):
+    '''
+    Tokenizes the inputted HuggingFace dataset 
+
+    Args: 
+        dataset: The HuggingFace dataset to tokenize
+        tokenizer: The tokenizer that will be used to tokenize the dataset 
+        column_name: The column name representing the chemicals in the dataset (SMILES/SELFIES)
+        
+    Returns: 
+        The tokenized PyTorch dataset
+    ''' 
 
     # Tokenize the dataset
     def tokenization(batch): 
@@ -73,71 +86,46 @@ def create_dataset(data: pd.DataFrame,
                          truncation=True,
                          max_length=128,)
     
-    train_dataset = train_dataset.map(tokenization, batched=True)
-    test_dataset = test_dataset.map(tokenization, batched=True)
-    validation_dataset = validation_dataset.map(tokenization, batched=True)
+    dataset = dataset.map(tokenization, batched=True)
 
     # Remove unnecessary columns
-    train_dataset = train_dataset.remove_columns(column_name)
-    test_dataset = test_dataset.remove_columns(column_name)
-    validation_dataset = validation_dataset.remove_columns(column_name)
+    dataset = dataset.remove_columns(column_name)
 
     # Convert HuggingFace dataset to a PyTorch dataset
-    train_dataset.set_format(type='torch', 
-                             columns=['input_ids', 'labels', 'attention_mask'])
-    test_dataset.set_format(type='torch', 
-                            columns=['input_ids', 'labels', 'attention_mask'])
-    validation_dataset.set_format(type='torch', 
-                            columns=['input_ids', 'labels', 'attention_mask'])
+    dataset.set_format(type='torch', columns=['input_ids', 'labels', 'attention_mask'])
     
 
-    return train_dataset, test_dataset, validation_dataset 
+    return dataset
 
 
-def create_dataloader(train_dataset: torch.utils.data.Dataset, 
-                      test_dataset: torch.utils.data.Dataset, 
-                      validation_dataset: torch.utils.data.Dataset, 
+def create_dataloader(dataset: torch.utils.data.Dataset,   
                       batch_size: int, 
+                      shuffle: bool,
                       num_workers=0): 
-    '''Creates training, testing, and validation PyTorch dataloaders
+    '''
+    Converts a PyTorch dataset to a PyTorch dataloader
     
     Args: 
-        train_dataset: Training dataset for the model
-        test_dataset: Testing dataset for the model 
-        validation_dataset: Validation dataset for the model
+        dataset: PyTorch dataset to be converted
         batch_size: The size of each batch of data in the training and testing dataset 
         num_workers: Number of CPUs to dedicate to creating dataloaders
+        shuffle: A boolean that dictates whether the dataloader is shuffled or not
 
     Returns: 
-        Training, testing, and validation PyTorch dataloaders    
+        A PyTorch dataloader    
     '''  
 
     # Create the training dataloader 
-    train_dataloader = DataLoader(
-        dataset=train_dataset, 
+    dataloader = DataLoader(
+        dataset=dataset, 
         batch_size=batch_size, 
-        shuffle=True, 
+        shuffle=shuffle, 
         num_workers=num_workers, 
-        pin_memory=False
+        pin_memory=True
     )
 
-    # Create the testing dataloader
-    test_dataloader = DataLoader(
-        dataset=test_dataset, 
-        batch_size=batch_size, 
-        num_workers=num_workers,
-        pin_memory=False
-    ) 
 
-    # Create the validation dataloader
-    validation_dataloader = DataLoader(
-        dataset=validation_dataset, 
-        batch_size=batch_size, 
-        num_workers=num_workers,
-        pin_memory=False
-    ) 
-
-    return train_dataloader, test_dataloader, validation_dataloader
+    return dataloader
 
 
 
