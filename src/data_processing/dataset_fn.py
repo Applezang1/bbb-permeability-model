@@ -1,4 +1,5 @@
 import pandas as pd, selfies as sf, numpy as np
+from datasets import Dataset
 from rdkit import Chem, RDLogger
 from rdkit.Chem import Descriptors, rdMolDescriptors
 from rdkit.Chem.SaltRemover import SaltRemover
@@ -237,10 +238,10 @@ def convert_to_selfies(BBB_data: pd.DataFrame):
     return BBB_data 
 
 
-def augment_dataset(train_data, 
-                    num_augmentations: int, 
-                    column_name: str, 
-                    model_name: str):
+def augment_data(train_data: Dataset, 
+                 num_augmentations: int, 
+                 column_name: str, 
+                 model_name: str):
     '''
     Augment the SMILES/SELFIES training dataset to include alternate representations of the same SMILES/SELFIES
 
