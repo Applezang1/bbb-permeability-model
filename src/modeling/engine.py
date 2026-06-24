@@ -67,28 +67,28 @@ def train_step(model: torch.nn.Module,
     return train_loss, train_mcc
 
 
-def test_step(model: torch.nn.Module, 
-              test_dataloader: torch.utils.data.DataLoader, 
-              device: torch.device):
+def val_step(model: torch.nn.Module, 
+             val_dataloader: torch.utils.data.DataLoader, 
+             device: torch.device):
     '''
-    Tests the model performance for one epoch
+    Validates the model performance for one epoch
 
     Args: 
         model: The PyTorch model to train 
-        test_dataloader: The Pytorch dataloader to test the model with
+        val_dataloader: The Pytorch dataloader to validate the model with
         device: Device used for training
 
     Returns: 
-        The testing loss and mcc score for one epoch
+        The validation loss and mcc score for one epoch
     '''
     # Put the model in evaluation mode
     model.eval() 
-    test_loss = 0 
-    test_tp, test_tn, test_fp, test_fn = 0, 0, 0, 0
+    val_loss = 0 
+    val_tp, val_tn, val_fp, val_fn = 0, 0, 0, 0
 
-    # Run testing loop for each batch in the testing dataloader
+    # Run validation loop for each batch in the validation dataloader
     with torch.inference_mode():
-        for batch, input in enumerate(test_dataloader): 
+        for batch, input in enumerate(val_dataloader): 
             # Put data on target device
             input = {k: v.to(device) for k, v in input.items()} 
 
@@ -97,73 +97,74 @@ def test_step(model: torch.nn.Module,
 
             # Calculate the loss 
             loss = output.loss 
-            test_loss += loss
+            val_loss += loss
 
             # Calculate the accuracy 
-            test_logits = output.logits 
-            test_pred_label = test_logits.argmax(dim=1)
+            val_logits = output.logits 
+            val_pred_label = val_logits.argmax(dim=1)
 
-            for idx in range(len(test_pred_label)):
-                if test_pred_label[idx] == 1 and input['labels'][idx] == 1: 
-                    test_tp += 1 
-                elif test_pred_label[idx] == 1 and input['labels'][idx] == 0: 
-                    test_fp += 1 
-                elif test_pred_label[idx] == 0 and input['labels'][idx] == 0: 
-                    test_tn += 1 
-                elif test_pred_label[idx] == 0 and input['labels'][idx] == 1: 
-                    test_fn += 1
+            for idx in range(len(val_pred_label)):
+                if val_pred_label[idx] == 1 and input['labels'][idx] == 1: 
+                    val_tp += 1 
+                elif val_pred_label[idx] == 1 and input['labels'][idx] == 0: 
+                    val_fp += 1 
+                elif val_pred_label[idx] == 0 and input['labels'][idx] == 0: 
+                    val_tn += 1 
+                elif val_pred_label[idx] == 0 and input['labels'][idx] == 1: 
+                    val_fn += 1
         
-    # Calculate final testing loss and accuracy
-    test_loss = test_loss / len(test_dataloader)
-    test_mcc = calculate_mcc(test_tp, test_tn, test_fp, test_fn)
+    # Calculate final validation loss and accuracy
+    val_loss = val_loss / len(val_dataloader)
+    val_mcc = calculate_mcc(val_tp, val_tn, val_fp, val_fn)
 
-    return test_loss, test_mcc 
+    return val_loss, val_mcc 
 
 
 def train(model: torch.nn.Module, 
+          fold,
           train_dataloader: torch.utils.data.DataLoader, 
-          test_dataloader: torch.utils.data.DataLoader, 
+          val_dataloader: torch.utils.data.DataLoader, 
           optimizer: torch.optim.Optimizer,
           device: torch.device, 
           num_epochs: int):
     
     '''
-    Trains and tests the model performance for a given number of epochs 
+    Trains and validates the model performance for a given number of epochs 
 
     Args: 
         model: The PyTorch model to train 
         train_dataloader: The PyTorch dataloader to train the model with 
-        test_dataloader: The Pytorch dataloader to test the model with
+        val_dataloader: The Pytorch dataloader to validate the model with
         optimizer: The PyTorch optimizer used to minimize the loss function
         device: Device used for training
-        num_epochs: Number of epochs to train and test the model for
+        num_epochs: Number of epochs to train and validate the model for
 
     Returns: 
-        A 'results' dictionary with the train_loss, train_acc, test_loss, and test_acc over each epoch
+        A 'results' dictionary with the train_loss, train_acc, val_loss, and val_acc over each epoch
     '''
-    # Define the 'results' dictionary to store training and testing loss/accuracy
+    # Define the 'results' dictionary to store training and validation loss/accuracy
     results = {
     'train_loss': [], 
     'train_mcc': [], 
-    'test_loss': [],
-    'test_mcc': []
+    'val_loss': [],
+    'val_mcc': []
     }   
 
     for epoch in tqdm(range(num_epochs)):
         # Train step
         train_loss, train_mcc = train_step(model, train_dataloader, optimizer, device)
 
-        # Test step
-        test_loss, test_mcc = test_step(model, test_dataloader, device)
+        # Validation step
+        val_loss, val_mcc = val_step(model, val_dataloader, device)
 
         # Print out what's happening
-        print(f'Epoch: {epoch} | Train Loss: {train_loss:.3f} | Train MCC: {train_mcc:.3f} | Test Loss: {test_loss:.3f} | Test MCC: {test_mcc:.3f}')
-
+        tqdm.write(f' Fold: {fold} | Epoch: {epoch} | Train Loss: {train_loss:.3f} | Train MCC: {train_mcc:.3f} | Val Loss: {val_loss:.3f} | Val MCC: {val_mcc:.3f}')
+        
         # Add results to the 'results' dictionary
         results['train_loss'].append(train_loss.detach().cpu().numpy())
         results['train_mcc'].append(train_mcc)
-        results['test_loss'].append(test_loss.detach().cpu().numpy())
-        results['test_mcc'].append(test_mcc) 
+        results['val_loss'].append(val_loss.detach().cpu().numpy())
+        results['val_mcc'].append(val_mcc) 
 
     return results
 
