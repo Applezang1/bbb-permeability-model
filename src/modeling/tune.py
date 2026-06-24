@@ -1,99 +1,138 @@
-import optuna, torch
-from src.utils import test_on_validation_set
+import optuna, torch, pandas as pd, numpy as np
+from src.data_processing.dataloaders import create_dataloader, augment_dataset, tokenize_dataset
+from src.data_processing.dataset_fn import space_selfies_strings
+from src.modeling.engine import train
+from datasets import Dataset
 from src.modeling.factory import create_model
+from sklearn.model_selection import StratifiedKFold
 
 
 def objective(trial, 
               config_file, 
-              train_dataloader: torch.utils.data.DataLoader, 
-              test_dataloader: torch.utils.data.DataLoader, 
-              validation_dataloader: torch.utils.data.DataLoader, 
-              device: torch.device, 
-              num_epochs: int): 
+              train_val_dataframe: pd.DataFrame, 
+              model_name: str, 
+              device: torch.device,
+              column_name: str, 
+              num_augmentations: int,
+              num_epochs: int, 
+              batch_size: int, 
+              num_workers: int,
+              num_splits: int): 
     '''
-    Define the hyperparameter that is being optimized (learning rate) as well as the model 
-    training, testing, and validation logic.
+    Define the hyperparameters that is being optimized (learning rate and weight decay) as well as the model 
+    training and validationlogic.
 
     Args: 
         trial: Optuna object that suggests hyperparameter values
         config_file: The configuration file containing the model information
-        train_dataloader: The PyTorch dataloader to train the model with 
-        test_dataloader: The PyTorch dataloader to test the model with 
-        validation_dataloader: The PyTorch dataloader to validate the model with 
+        train_val_dataloader: The PyTorch dataloader to train and validate the model with 
+        model_name: The name of the model whose hyperparameters will be optimized
         device: Device used for training and testing
+        column_name: The column name representing the chemicals in the dataset (SMILES/SELFIES)
+        num_augmentations: The number of times to perform data augmentation on the training dataset 
         num_epochs: The number of epochs to train and test the model for
+        batch_size: The size of each batch of data in the training and testing dataset 
+        num_workers: Number of CPUs to dedicate to creating dataloaders
+        num_splits: Number of times to split the train_val_dataloader
+
 
     Returns: 
-        The final val_mcc score after training and testing on the proposed hyperparameter value
+        The final averaged val_mcc score after training on the proposed hyperparameter value
     '''
 
-    # Instantiate model
-    model, tokenizer = create_model(config_file)
-    model.to(device)
+    # Initialize Stratified K Fold Class
+    skf = StratifiedKFold(n_splits=num_splits, shuffle=True, random_state=42)
+
+    # Instantiate dictionary to store model results
+    final_results = {
+        'val_mcc': [],
+    }
 
     # Define hyperparameter to be optimized
     lr = trial.suggest_float('lr', 1e-5, 1e-1, log=True)
-    
-    optimizer = torch.optim.SGD(params=model.parameters(), 
-                            lr=lr)
+    weight_decay = trial.suggest_float('weight_decay', 1e-4, 1e-1, log=True)
 
-    # Hyperparameter Tuning
-    for epoch in range(num_epochs):
+
+    ### Create training and validation dataloaders ###
+    for fold, (train_index, test_index) in enumerate(skf.split(train_val_dataframe, train_val_dataframe['labels'])):
+
+        # Reinstantate model optimizer, and tokenizer 
+        model, tokenizer = create_model(config_file)
+        model.to(device)
+
+        optimizer = torch.optim.AdamW(params=model.parameters(), 
+                                    lr=lr, 
+                                    weight_decay=weight_decay)
+        
+        # Split train_val dataframe into train and validation Pandas DataFrames
+        train_dataset = train_val_dataframe.iloc[train_index, :]
+        val_dataset = train_val_dataframe.iloc[test_index, :]
+
+        # Convert the train and validation Pandas DataFrames to HuggingFace datasets
+        train_dataset = Dataset.from_pandas(train_dataset)
+        val_dataset = Dataset.from_pandas(val_dataset)
+
+        # Implement required spacing to validation dataset's SELFIES strings if the model is SELFIES-TED
+        if model_name == 'SELFIES-TED':
+            # Implement spacing to validation dataset
+            val_dataset = val_dataset.to_pandas()
+            val_dataset = space_selfies_strings(val_dataset)
+            val_dataset = Dataset.from_pandas(val_dataset)
+
+        # Augment the training dataset
+        train_dataset = augment_dataset(train_dataset,  
+                                        num_augmentations, 
+                                        column_name, 
+                                        model_name)
+
+        # Tokenize the training and validation dataset               
+        train_dataset = tokenize_dataset(train_dataset,
+                                         tokenizer, 
+                                         column_name)
+        
+        val_dataset = tokenize_dataset(val_dataset, 
+                                       tokenizer, 
+                                       column_name)
+
+        # Create PyTorch training dataloader
+        train_dataloader = create_dataloader(train_dataset, 
+                                             batch_size,
+                                             shuffle=True, 
+                                             num_workers=num_workers)
+        
+        # Create PyTorch validation dataloader
+        val_dataloader = create_dataloader(val_dataset, 
+                                           batch_size, 
+                                           shuffle=False,
+                                           num_workers=num_workers)
+
+
         ### Training ###
-        # Put model in train mode
-        model.train()
-        train_loss = 0
+        # Train the model based on the argument
+        results = train(model=model, 
+                        fold=fold,
+                        train_dataloader=train_dataloader,
+                        val_dataloader=val_dataloader,
+                        optimizer=optimizer,
+                        device=device,
+                        num_epochs=num_epochs)
 
-        # Run training loop for each batch in the training dataloader
-        for batch, input in enumerate(train_dataloader): 
-            # Put data on target device
-            input = {k: v.to(device) for k, v in input.items()} 
+        # Store validation metric
+        final_results['val_mcc'].append(results['val_mcc'])
 
-            # Compute a forward pass 
-            output = model(**input) 
-
-            # Calculate the loss 
-            loss = output.loss 
-            train_loss += loss
-
-            # Optimizer zero grad 
-            optimizer.zero_grad()
-
-            # Loss backwards 
-            loss.backward()
-
-            # Optimizer step
-            optimizer.step()
-
-        # Calculate final training loss
-        train_loss = train_loss / len(train_dataloader) 
-
-        ### Testing ###
-        model.eval() 
-        test_loss = 0 
-
-        # Run testing loop for each batch in the testing dataloader
-        with torch.inference_mode():
-            for batch, input in enumerate(test_dataloader): 
-                # Put data on target device
-                input = {k: v.to(device) for k, v in input.items()} 
-
-                # Compute a forward pass 
-                output = model(**input) 
-
-                # Calculate the loss 
-                loss = output.loss 
-                test_loss += loss 
-            
-        # Calculate final testing loss and accuracy
-        test_loss = test_loss / len(test_dataloader)
-
-        val_loss, val_mcc, val_confusion_matrix = test_on_validation_set(model, device, validation_dataloader)
-        trial.report(val_mcc, epoch)
+        trial.report(results['val_mcc'][-1], fold)
         if trial.should_prune():
             raise optuna.exceptions.TrialPruned()
 
-    final_val_loss, final_val_mcc, final_val_confusion_matrix = test_on_validation_set(model, device, validation_dataloader)
 
+    ### Report Final Val MCC Score ###
+    # Instantiate variables to store average metric value across folds 
+    avg_val_mcc = []
 
-    return final_val_mcc
+    # Obtain the average metric values across folds
+    val_mcc = np.array(final_results['val_mcc'])
+        
+    for i in range(num_epochs):
+        avg_val_mcc.append(np.mean(val_mcc[:, i]))
+        
+    return avg_val_mcc[num_epochs-1]
