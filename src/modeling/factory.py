@@ -2,12 +2,14 @@ from transformers.models.roberta.modeling_roberta import RobertaForSequenceClass
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, BartForSequenceClassification
 
 
-def create_model(config_file): 
+def create_model(config_file, 
+                 classifier_dropout): 
     '''
     Gets the appropriate model and tokenizer information from the .yaml file in the configs file
 
     Args: 
         config_file: The .yaml file in the configs file containing information about the model name 
+        classifier_dropout: The probability of a neuron in the classifer layer being temporarily droppped during training
 
     Returns: 
         The model and tokenizer associated with the model name
@@ -22,7 +24,7 @@ def create_model(config_file):
         model = RobertaForSequenceClassification.from_pretrained("DeepChem/ChemBERTa-77M-MTR"
                                                          ,num_labels=2
                                                          ,use_safetensors=True
-                                                         ,classifier_dropout=0.1)
+                                                         ,classifier_dropout=classifier_dropout)
     elif model_name == 'MolFormer-XL':
         model = AutoModelForSequenceClassification.from_pretrained("ibm/MoLFormer-XL-both-10pct", 
                                           deterministic_eval=True, 
@@ -35,7 +37,7 @@ def create_model(config_file):
         model = AutoModelForSequenceClassification.from_pretrained("gayane/BARTSmiles", 
                                                                    num_labels=2, 
                                                                    use_safetensors=True, 
-                                                                   classifier_dropout=0.1)
+                                                                   classifier_dropout=classifier_dropout)
         tokenizer = AutoTokenizer.from_pretrained("gayane/BARTSmiles", 
                                                   add_prefix_space=True) 
         tokenizer.pad_token_id = 0
@@ -44,13 +46,13 @@ def create_model(config_file):
         tokenizer = AutoTokenizer.from_pretrained("ibm-research/materials.selfies-ted")
         model = BartForSequenceClassification.from_pretrained("ibm-research/materials.selfies-ted", 
                                                                    num_labels=2, 
-                                                                   classifier_dropout=0.1)
+                                                                   classifier_dropout=classifier_dropout)
     elif model_name == 'Mol-Gen': 
         tokenizer = AutoTokenizer.from_pretrained("zjunlp/MolGen-large")
         model = AutoModelForSequenceClassification.from_pretrained("zjunlp/MolGen-large", 
                                                       num_labels=2, 
                                                       use_safetensors=True, 
-                                                      classifier_dropout=0.1)
+                                                      classifier_dropout=classifier_dropout)
     else: 
         raise ValueError('Model name not recognized')
 
