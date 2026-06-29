@@ -133,6 +133,7 @@ def train(model: torch.nn.Module,
 
     Args: 
         model: The PyTorch model to train 
+        fold: The current fold number of training
         train_dataloader: The PyTorch dataloader to train the model with 
         val_dataloader: The Pytorch dataloader to validate the model with
         optimizer: The PyTorch optimizer used to minimize the loss function
