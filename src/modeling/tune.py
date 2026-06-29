@@ -51,18 +51,23 @@ def objective(trial,
     # Define hyperparameter to be optimized
     lr = trial.suggest_float('lr', 1e-5, 1e-1, log=True)
     weight_decay = trial.suggest_float('weight_decay', 1e-4, 1e-1, log=True)
+    beta1 = trial.suggest_float("beta1", 0.9, 0.95)
+    beta2 = trial.suggest_float("beta2", 0.98, 0.9999, log=True)
+    classifier_dropout = trial.suggest_float('classifier_dropout', 0.0, 0.5)
 
 
     ### Create training and validation dataloaders ###
     for fold, (train_index, test_index) in enumerate(skf.split(train_val_dataframe, train_val_dataframe['labels'])):
 
         # Reinstantate model optimizer, and tokenizer 
-        model, tokenizer = create_model(config_file)
+        model, tokenizer = create_model(config_file, 
+                                        classifier_dropout)
         model.to(device)
 
         optimizer = torch.optim.AdamW(params=model.parameters(), 
-                                    lr=lr, 
-                                    weight_decay=weight_decay)
+                                      lr=lr, 
+                                      weight_decay=weight_decay, 
+                                      betas=(beta1, beta2))
         
         # Split train_val dataframe into train and validation Pandas DataFrames
         train_dataset = train_val_dataframe.iloc[train_index, :]
