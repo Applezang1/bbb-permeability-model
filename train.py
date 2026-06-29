@@ -42,6 +42,9 @@ LR = configs['hyperparameters']['LR']
 NUM_AUGMENTATIONS = configs['hyperparameters']['NUM_AUGMENTATIONS']
 WEIGHT_DECAY = configs['hyperparameters']['WEIGHT_DECAY']
 NUM_SPLITS = configs['hyperparameters']['NUM_SPLITS']
+BETA1 = configs['hyperparameters']['BETA1']
+BETA2 = configs['hyperparameters']['BETA2']
+CLASSIFIER_DROPOUT = configs['hyperparameters']['CLASSIFIER_DROPOUT']
 column_name = dataset_loader(configs)
 model_name = configs['model_information']['model_name']
 
@@ -49,7 +52,9 @@ model_name = configs['model_information']['model_name']
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # Initialize Stratified K Fold Class
-skf = StratifiedKFold(n_splits=NUM_SPLITS, shuffle=True, random_state=42)
+skf = StratifiedKFold(n_splits=NUM_SPLITS, 
+                      shuffle=True, 
+                      random_state=42)
 
 # Instantiate model optimizer, and tokenizer 
 model, tokenizer = create_model(configs)
@@ -109,10 +114,18 @@ if args.tune:
                                            n_trials=args.tune)
     best_lr = study.best_params['lr']
     best_weight_decay = study.best_params['weight_decay']
+    best_beta1 = study.best_params['beta1']
+    best_beta2 = study.best_params['beta2']
+    best_classifier_dropout = study.best_params['classifier_dropout']
 
-    # Print the best hyperparameter and plot visualizations
+    # Print the best hyperparameter
     print(f'Best Learning rate: {best_lr}')
     print(f'Best Weight Decay: {best_weight_decay}')
+    print(f'Best beta1 value: {best_beta1}')
+    print(f'Best beta2 value: {best_beta2}')
+    print(f'Best classifier dropout rate: {best_classifier_dropout}')
+
+    # Plot visualizations
     fig = optuna.visualization.plot_optimization_history(study)
     fig.show()
     fig = optuna.visualization.plot_slice(study, params=['lr', 'weight_decay'])
@@ -124,12 +137,14 @@ if args.train:
     for fold, (train_index, test_index) in enumerate(skf.split(train_val_dataframe, train_val_dataframe['labels'])):
 
         # Reinstantate model optimizer, and tokenizer 
-        model, tokenizer = create_model(configs)
+        model, tokenizer = create_model(configs, 
+                                        CLASSIFIER_DROPOUT)
         model.to(device)
 
         optimizer = torch.optim.AdamW(params=model.parameters(), 
-                                    lr=LR, 
-                                    weight_decay=WEIGHT_DECAY)
+                                      lr=LR, 
+                                      weight_decay=WEIGHT_DECAY, 
+                                      betas=(BETA1, BETA2))
         
         # Split train_val dataframe into train and validation Pandas DataFrames
         train_dataset = train_val_dataframe.iloc[train_index, :]
@@ -158,20 +173,20 @@ if args.train:
                                         column_name)
         
         val_dataset = tokenize_dataset(val_dataset, 
-                                    tokenizer, 
-                                    column_name)
+                                       tokenizer, 
+                                       column_name)
 
         # Create PyTorch training dataloader
         train_dataloader = create_dataloader(train_dataset, 
-                                            BATCH_SIZE, 
-                                            shuffle=True,
-                                            num_workers=NUM_WORKERS)
+                                             BATCH_SIZE, 
+                                             shuffle=True,
+                                             num_workers=NUM_WORKERS)
         
         # Create PyTorch validation dataloader
         val_dataloader = create_dataloader(val_dataset, 
-                                        BATCH_SIZE, 
-                                        shuffle=False, 
-                                        num_workers=NUM_WORKERS)
+                                           BATCH_SIZE, 
+                                           shuffle=False, 
+                                           num_workers=NUM_WORKERS)
 
 
         ### Training ###
