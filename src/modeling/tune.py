@@ -19,25 +19,25 @@ def objective(trial,
               num_workers: int,
               num_splits: int): 
     '''
-    Define the hyperparameters that is being optimized (learning rate and weight decay) as well as the model 
-    training and validationlogic.
+    Define the hyperparameters that is being optimized (learning rate, weight decay, beta1, beta2, classifier dropout rate)
+    as well as the model training and validation logic.
 
     Args: 
         trial: Optuna object that suggests hyperparameter values
         config_file: The configuration file containing the model information
-        train_val_dataloader: The PyTorch dataloader to train and validate the model with 
+        train_val_dataframe: The Pandas DataFrame to train and validate the model with 
         model_name: The name of the model whose hyperparameters will be optimized
-        device: Device used for training and testing
+        device: Device used for training and validation
         column_name: The column name representing the chemicals in the dataset (SMILES/SELFIES)
         num_augmentations: The number of times to perform data augmentation on the training dataset 
-        num_epochs: The number of epochs to train and test the model for
-        batch_size: The size of each batch of data in the training and testing dataset 
+        num_epochs: The number of epochs to train and validate the model for
+        batch_size: The size of each batch of data in the training and validation dataset 
         num_workers: Number of CPUs to dedicate to creating dataloaders
         num_splits: Number of times to split the train_val_dataloader
 
 
     Returns: 
-        The final averaged val_mcc score after training on the proposed hyperparameter value
+        The final averaged val_mcc score after training on the proposed hyperparameter value with k-fold cross validation
     '''
 
     # Initialize Stratified K Fold Class
@@ -56,10 +56,10 @@ def objective(trial,
     classifier_dropout = trial.suggest_float('classifier_dropout', 0.0, 0.5)
 
 
-    ### Create training and validation dataloaders ###
+    ### Undergo K-Fold Cross Validation to analyze hyperparameter performance ###
     for fold, (train_index, test_index) in enumerate(skf.split(train_val_dataframe, train_val_dataframe['labels'])):
 
-        # Reinstantate model optimizer, and tokenizer 
+        # Reinstantate model, optimizer, and tokenizer 
         model, tokenizer = create_model(config_file, 
                                         classifier_dropout)
         model.to(device)
