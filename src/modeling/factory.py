@@ -30,7 +30,8 @@ def create_model(config_file,
                                           deterministic_eval=True, 
                                           trust_remote_code=True, 
                                           num_labels=2, 
-                                          use_safetensors=True)
+                                          use_safetensors=True, 
+                                          classifier_dropout_prob=classifier_dropout)
         tokenizer = AutoTokenizer.from_pretrained("ibm/MoLFormer-XL-both-10pct", 
                                                   trust_remote_code=True)
     elif model_name == 'BARTSmiles': 
