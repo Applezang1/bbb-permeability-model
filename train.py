@@ -3,12 +3,13 @@ import numpy as np, pandas as pd, matplotlib.pyplot as plt
 from sklearn.model_selection import StratifiedKFold
 from src.data_processing.dataloaders import create_dataloader, augment_dataset, tokenize_dataset
 from src.data_processing.dataset_fn import space_selfies_strings
-from src.modeling.engine import train
+from src.modeling.engine import train, train_step
 from datasets import Dataset
 from torchinfo import summary
 from src.modeling.factory import create_model, dataset_loader
 from src.utils import save_model, load_model, plot_confusion_matrix, test_on_testing_set
 from src.modeling.tune import objective
+from tqdm import tqdm
 
 
 # Define arguments to run train.py
@@ -23,7 +24,10 @@ parser.add_argument ('--validate',
                      help='Enable the model to be tested on the final validation dataset using the MCC score')
 parser.add_argument('--train', 
                     action='store_true', 
-                    help='Enable model training')
+                    help='Enable model training and validation')
+parser.add_argument('--full_train', 
+                    action='store_true', 
+                    help='Trains the model on 100 percent of the train_val DataFrame')
 parser.add_argument('--tune', 
                     type=int, 
                     help='Specify the number of trials for hyperparameter tuning')
@@ -56,9 +60,15 @@ skf = StratifiedKFold(n_splits=NUM_SPLITS,
                       shuffle=True, 
                       random_state=42)
 
-# Instantiate model optimizer, and tokenizer 
-model, tokenizer = create_model(configs)
+# Instantiate model, optimizer, and tokenizer 
+model, tokenizer = create_model(configs, 
+                                CLASSIFIER_DROPOUT)
 model.to(device)
+
+optimizer = torch.optim.AdamW(params=model.parameters(), 
+                              lr=LR, 
+                              weight_decay=WEIGHT_DECAY, 
+                              betas=(BETA1, BETA2))
 
 # Initialize an empty dictionary to store model training results
 final_results = {
@@ -69,8 +79,12 @@ final_results = {
 }
 
 ### Load in train_val and testing datafranes ###
-train_val_dataframe = pd.read_csv('data/train_val_dataset.csv')
-test_dataframe = pd.read_csv('data/test_dataset.csv')
+if column_name == 'SMILES':
+    train_val_dataframe = pd.read_csv('data/smiles_train_val_dataset.csv')
+    test_dataframe = pd.read_csv('data/smiles_test_dataset.csv')
+elif column_name == 'SELFIES': 
+    train_val_dataframe = pd.read_csv('data/selfies_train_val_dataset.csv')
+    test_dataframe = pd.read_csv('data/selfies_test_dataset.csv')
 
 
 ### Create testing dataloader 
@@ -247,6 +261,37 @@ if args.train:
     plt.legend()
     plt.savefig('mcc.png', dpi=300, bbox_inches='tight')
     plt.show()
+
+
+# Train the model on 100% of the train_val dataset based on argument
+if args.full_train:
+    # Convert the train_val Pandas DataFrames to HuggingFace training dataset
+    train_dataset = Dataset.from_pandas(train_val_dataframe)
+
+    # Augment the training dataset
+    train_dataset = augment_dataset(train_dataset,  
+                                    NUM_AUGMENTATIONS, 
+                                    column_name, 
+                                    model_name)
+
+    # Tokenize the training dataset               
+    train_dataset = tokenize_dataset(train_dataset,
+                                     tokenizer, 
+                                     column_name)
+
+    # Create PyTorch training dataloader
+    train_dataloader = create_dataloader(train_dataset, 
+                                         BATCH_SIZE, 
+                                         shuffle=True,
+                                         num_workers=NUM_WORKERS)
+    
+    ### Full Training Loop 
+    for epoch in tqdm(range(NUM_EPOCHS)):
+        train_loss, train_mcc = train_step(model, 
+                                           train_dataloader, 
+                                           optimizer, 
+                                           device)
+        tqdm.write(f' Epoch: {epoch} | Train Loss: {train_loss} | Train MCC: {train_mcc}')
 
 
 # Save model weights into save_models based on argument
