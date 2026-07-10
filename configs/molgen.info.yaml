@@ -1,16 +1,15 @@
 hyperparameters: 
-  TEST_SPLIT: 0.2
   BATCH_SIZE: 32 
   NUM_WORKERS: 0
   NUM_EPOCHS: 15
-  LR: 0.031307566143239346
+  LR:  0.000011442721428859092 
   NUM_AUGMENTATIONS: 3
-  WEIGHT_DECAY: 0
+  WEIGHT_DECAY: 0.04864847961243235
   NUM_SPLITS: 5
-  BETA1: 0.9 
-  BETA2: 0.999
-  CLASSIFIER_DROPOUT: 0.1
+  BETA1: 0.9472815044772508
+  BETA2: 0.9976982374812763
+  CLASSIFIER_DROPOUT: 0.06531987871756607
 model_information: 
   model_name: Mol-Gen
 dataset_information: 
-  dataset: data/processed/selfies_dataset.csv
+  dataset: data/processed/selfies_dataframe.csv

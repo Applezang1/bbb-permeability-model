@@ -1,16 +1,15 @@
 hyperparameters: 
-  TEST_SPLIT: 0.2
   BATCH_SIZE: 32 
   NUM_WORKERS: 0
   NUM_EPOCHS: 25
-  LR: 0.031039805157262273
+  LR: 0.00004012713932065896
   NUM_AUGMENTATIONS: 3
-  WEIGHT_DECAY: 0
+  WEIGHT_DECAY: 0.055213503103036264
   NUM_SPLITS: 5
-  BETA1: 0.9 
-  BETA2: 0.999
-  CLASSIFIER_DROPOUT: 0.1
+  BETA1: 0.9499889836248272 
+  BETA2: 0.9833975457535385
+  CLASSIFIER_DROPOUT: 0.42743132846928816
 model_information: 
   model_name: MolFormer-XL
 dataset_information: 
-  dataset: data/processed/smiles_dataset.csv
+  dataset: data/processed/smiles_dataframe.csv

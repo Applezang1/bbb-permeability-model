@@ -1,16 +1,15 @@
 hyperparameters: 
-  TEST_SPLIT: 0.2
   BATCH_SIZE: 32 
   NUM_WORKERS: 0
   NUM_EPOCHS: 25
-  LR: 0.005003326399323307
+  LR: 0.00004280248950574509
   NUM_AUGMENTATIONS: 3
-  WEIGHT_DECAY: 0
+  WEIGHT_DECAY: 0.09408250862570895
   NUM_SPLITS: 5
-  BETA1: 0.9 
-  BETA2: 0.999
-  CLASSIFIER_DROPOUT: 0.1
+  BETA1: 0.9003048241603728
+  BETA2: 0.9805464111482203 
+  CLASSIFIER_DROPOUT: 0.18671770692071418
 model_information: 
   model_name: BARTSmiles
 dataset_information: 
-  dataset: data/processed/smiles_dataset.csv
+  dataset: data/processed/smiles_dataframe.csv

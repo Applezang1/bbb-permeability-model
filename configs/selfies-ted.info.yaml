@@ -1,5 +1,4 @@
 hyperparameters: 
-  TEST_SPLIT: 0.2
   BATCH_SIZE: 32 
   NUM_WORKERS: 0
   NUM_EPOCHS: 25
@@ -13,4 +12,4 @@ hyperparameters:
 model_information: 
   model_name: SELFIES-TED
 dataset_information: 
-  dataset: data/processed/selfies_dataset.csv
+  dataset: data/processed/selfies_dataframe.csv
