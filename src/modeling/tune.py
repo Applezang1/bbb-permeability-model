@@ -1,7 +1,8 @@
 import optuna, torch, pandas as pd, numpy as np
+from tqdm import tqdm
 from src.data_processing.dataloaders import create_dataloader, augment_dataset, tokenize_dataset
 from src.data_processing.dataset_fn import space_selfies_strings
-from src.modeling.engine import train
+from src.modeling.engine import train_step, val_step
 from datasets import Dataset
 from src.modeling.factory import create_model
 from sklearn.model_selection import StratifiedKFold
@@ -113,21 +114,42 @@ def objective(trial,
 
 
         ### Training ###
-        # Train the model based on the argument
-        results = train(model=model, 
-                        fold=fold,
-                        train_dataloader=train_dataloader,
-                        val_dataloader=val_dataloader,
-                        optimizer=optimizer,
-                        device=device,
-                        num_epochs=num_epochs)
+        # Make a results dictionary to store final results
+        results = {
+            'train_loss': [], 
+            'train_mcc': [], 
+            'val_loss': [],
+            'val_mcc': []
+        }   
+
+        for epoch in tqdm(range(num_epochs)):
+            # Train step
+            train_loss, train_mcc = train_step(model, train_dataloader, optimizer, device)
+
+            # Validation step
+            val_loss, val_mcc = val_step(model, val_dataloader, device)
+
+            # Print out what's happening
+            tqdm.write(f' Fold: {fold} | Epoch: {epoch} | Train Loss: {train_loss:.3f} | Train MCC: {train_mcc:.3f} | Val Loss: {val_loss:.3f} | Val MCC: {val_mcc:.3f}')
+            
+            # Add results to the 'results' dictionary
+            results['val_mcc'].append(val_mcc) 
 
         # Store validation metric
         final_results['val_mcc'].append(results['val_mcc'])
 
         trial.report(results['val_mcc'][-1], fold)
         if trial.should_prune():
-            raise optuna.exceptions.TrialPruned()
+            # Instantiate variables to store average metric value across folds 
+            avg_val_mcc = []
+
+            # Obtain the average metric values across folds
+            val_mcc = np.array(final_results['val_mcc'])
+                
+            for i in range(num_epochs):
+                avg_val_mcc.append(np.mean(val_mcc[:, i]))
+                
+            return avg_val_mcc[num_epochs-1]
 
 
     ### Report Final Val MCC Score ###
