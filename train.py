@@ -38,7 +38,6 @@ args = parser.parse_args()
 with open(args.config_file, 'r') as hyp_file: 
     configs = yaml.safe_load(hyp_file)
 
-TEST_SPLIT = configs['hyperparameters']['TEST_SPLIT']
 BATCH_SIZE = configs['hyperparameters']['BATCH_SIZE']
 NUM_WORKERS = configs['hyperparameters']['NUM_WORKERS']
 NUM_EPOCHS = configs['hyperparameters']['NUM_EPOCHS']
@@ -51,6 +50,7 @@ BETA2 = configs['hyperparameters']['BETA2']
 CLASSIFIER_DROPOUT = configs['hyperparameters']['CLASSIFIER_DROPOUT']
 column_name = dataset_loader(configs)
 model_name = configs['model_information']['model_name']
+
 
 # Create device-agnostic code 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -78,17 +78,18 @@ final_results = {
     'val_loss': [],
 }
 
+
 ### Load in train_val and testing datafranes ###
 if column_name == 'SMILES':
-    train_val_dataframe = pd.read_csv('data/smiles_train_val_dataset.csv')
-    test_dataframe = pd.read_csv('data/smiles_test_dataset.csv')
+    train_val_dataframe = pd.read_csv('data/smiles_train_val_dataframe.csv')
+    test_dataframe = pd.read_csv('data/smiles_test_dataframe.csv')
 elif column_name == 'SELFIES': 
-    train_val_dataframe = pd.read_csv('data/selfies_train_val_dataset.csv')
-    test_dataframe = pd.read_csv('data/selfies_test_dataset.csv')
+    train_val_dataframe = pd.read_csv('data/selfies_train_val_dataframe.csv')
+    test_dataframe = pd.read_csv('data/selfies_test_dataframe.csv')
 
 
 ### Create testing dataloader 
-# Convert the testing Pandas DataFrames to HuggingFAce datasets
+# Convert the testing Pandas DataFrames to HuggingFace datasets
 test_dataset = Dataset.from_pandas(test_dataframe)
 
 # Implement required spacing to testing dataset's SELFIES strings if the model is SELFIES-TED
@@ -113,7 +114,8 @@ test_dataloader = create_dataloader(test_dataset,
 ### Optimize the hyperparameter based on the argument
 if args.tune:
     # Maximize the val_mcc score during hyperparameter optimization
-    study = optuna.create_study(direction="maximize")
+    pruner = optuna.pruners.WilcoxonPruner(p_threshold=0.10)
+    study = optuna.create_study(direction="maximize", pruner=pruner)
     study.optimize(lambda trial: objective(trial,  
                                            configs, 
                                            train_val_dataframe,
@@ -273,11 +275,16 @@ if args.full_train:
                                     NUM_AUGMENTATIONS, 
                                     column_name, 
                                     model_name)
+    
+    
+    lengths = [len(tokenizer.encode(text)) for text in train_dataset['SMILES']]
+    print(np.percentile(lengths, 95))
 
     # Tokenize the training dataset               
     train_dataset = tokenize_dataset(train_dataset,
                                      tokenizer, 
                                      column_name)
+
 
     # Create PyTorch training dataloader
     train_dataloader = create_dataloader(train_dataset, 
