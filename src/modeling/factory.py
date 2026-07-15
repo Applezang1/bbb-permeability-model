@@ -76,9 +76,9 @@ def dataset_loader(config_file):
     dataset_name = config_file['dataset_information']['dataset']
 
     # Run an if/else statement to return the appropriate dataset loading function for the dataset
-    if dataset_name == 'data/processed/smiles_dataset.csv': 
+    if dataset_name == 'data/processed/smiles_dataframe.csv': 
         return 'SMILES'  
-    elif dataset_name == 'data/processed/selfies_dataset.csv':
+    elif dataset_name == 'data/processed/selfies_dataframe.csv':
         return 'SELFIES'
     else: 
         raise ValueError('Dataset path not recognized')
