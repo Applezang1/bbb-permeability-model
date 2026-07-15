@@ -4,7 +4,7 @@ import numpy as np, matplotlib.pyplot as plt, seaborn as sns, pandas as pd
 
 ### Initialize All Required Datasets for Data Analysis ###
 # Create Pandas DataFrame of SMILES and BBB permeability label
-BBB_data = pd.read_csv('data/processed/smiles_dataset.csv')
+BBB_data = pd.read_csv('data/processed/smiles_dataframe.csv')
 
 # Calculate the logP, TPSA, molecular weight, NHOH, NO count of each SMILES
 BBB_data = calculate_chem_features(BBB_data)
