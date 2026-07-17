@@ -16,6 +16,9 @@ for smiles in BBB_data['SMILES']:
     mol_list.append(Chem.MolFromSmiles(smiles))
 BBB_data['Mol'] = mol_list
 
+### Print BBB+ and BBB- count ###
+print(f"BBB+ Count: {(BBB_data['labels'] == 1).sum()}")
+print(f"BBB- Count: {(BBB_data['labels'] == 0).sum()}")
 
 ### Check for Nonunique SMILES ### 
 SMILES_count = BBB_data['SMILES'].value_counts()
@@ -24,7 +27,8 @@ nonunique_SMILES = SMILES_count[SMILES_count > 1]
 print(f"Number of Nonunique SMILES: {len(nonunique_SMILES)}")
 print(f"Total Number of Instances of Nonunique SMILES: {nonunique_SMILES.sum()}")
 print(f"Total Number of Instances of Unique SMILES: {len(BBB_data['SMILES'])-nonunique_SMILES.sum()}")
-print()
+print() 
+
 
 # Plot a Pie Chart representing the number of nonunique SMILES
 explode = (0.1, 0)
