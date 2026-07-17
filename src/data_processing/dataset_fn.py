@@ -31,11 +31,20 @@ def raw_bbb_data():
     b3db_dataset = pd.read_csv('data/raw/B3DB.tsv', 
                                usecols=['SMILES', 'logBB'],
                                sep='\t')
+    
+    dropped_indices = []
     b3db_bbb_class = []
     for index in range(len(b3db_dataset['logBB'])):
-        bbb_class = 1 if b3db_dataset['logBB'][index] > 0.3 else 0
-        b3db_bbb_class.append(bbb_class)
+        if b3db_dataset['logBB'][index] > 0.3: 
+            bbb_class = 1
+            b3db_bbb_class.append(bbb_class)
+        elif b3db_dataset['logBB'][index] < -1: 
+            bbb_class = 0
+            b3db_bbb_class.append(bbb_class)
+        else: 
+            dropped_indices.append(index)
 
+    b3db_dataset = b3db_dataset.drop(index=dropped_indices).copy()
     b3db_dataset['labels'] = b3db_bbb_class
     b3db_dataset = b3db_dataset.drop(columns='logBB')
 
@@ -75,7 +84,7 @@ def curate_bbb_data(BBB_dataset: pd.DataFrame):
         mol = Chem.MolFromSmiles(smiles)
         if mol is None: 
             invalid_SMILES.append(smiles) 
-
+    
     BBB_data = BBB_dataset[~BBB_dataset['SMILES'].isin(invalid_SMILES)]
 
     ### 2. Canonicalize and convert SMILES to isomeric forms ###
@@ -99,7 +108,7 @@ def curate_bbb_data(BBB_dataset: pd.DataFrame):
             stripped_smiles = Chem.MolToSmiles(stripped_mol, isomericSmiles=True)
             BBB_data.at[index, 'SMILES'] = stripped_smiles
             BBB_data.at[index, 'Mol'] = stripped_mol
-
+    
     ### 4. Check for a charge for each SMILES ###
     uncharger = rdMolStandardize.Uncharger() 
     for index in BBB_data.index:
@@ -110,7 +119,7 @@ def curate_bbb_data(BBB_dataset: pd.DataFrame):
             neutral_smiles = Chem.MolToSmiles(neutral_mol, isomericSmiles=True)
             BBB_data.at[index, 'SMILES'] = neutral_smiles
             BBB_data.at[index, 'Mol'] = neutral_mol
-
+    
     ### 5. Check for explicit Hs for each SMILES ### 
     for index in BBB_data.index:
         mol = BBB_data.at[index, 'Mol']
@@ -133,7 +142,7 @@ def curate_bbb_data(BBB_dataset: pd.DataFrame):
             clean_mol = Chem.MolFromSmiles(clean_smiles) 
             BBB_data.at[index, 'SMILES'] = clean_smiles
             BBB_data.at[index, 'Mol'] = clean_mol
-
+    
     ### 7/8. Curate the dataset based on repeated SMILES ###
     # Create a dataset of nonunique SMILES
     SMILES_count = BBB_data['SMILES'].value_counts()
