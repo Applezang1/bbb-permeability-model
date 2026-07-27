@@ -1,4 +1,4 @@
-import optuna, torch, pandas as pd, numpy as np
+import torch, pandas as pd, numpy as np
 from tqdm import tqdm
 from src.data_processing.dataloaders import create_dataloader, augment_dataset, tokenize_dataset
 from src.data_processing.dataset_fn import space_selfies_strings
