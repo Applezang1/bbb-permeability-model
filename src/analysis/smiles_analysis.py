@@ -1,11 +1,11 @@
 from rdkit.Chem.SaltRemover import SaltRemover
-from src.data_processing.dataset_fn import raw_bbb_data
+from src.data_processing.dataset_fn import raw_bbb_train_data
 from rdkit import Chem, RDLogger
 import seaborn as sns, matplotlib.pyplot as plt, pandas as pd
 
 
-# Import raw data without any curation methods
-BBB_data = raw_bbb_data() 
+# Import raw training data without any curation methods
+BBB_data = raw_bbb_train_data() 
 
 # Prevent error messages from invalid SMILES configurations
 RDLogger.DisableLog('rdApp.*')
