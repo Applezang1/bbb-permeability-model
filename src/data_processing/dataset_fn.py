@@ -11,7 +11,7 @@ def raw_bbb_train_data():
     Combines the LightBBB, DeePred, MoleculeNet, and B3BD Dataset into one Pandas DataFrames for training
 
     Returns: 
-        A 'BBB_dataset' containing each compound's SMILES and its respective BBB permeability label 
+        A 'train_dataset' containing each compound's SMILES and its respective BBB permeability label 
         before any curation methods
     '''
 
@@ -50,10 +50,10 @@ def raw_bbb_train_data():
     b3db_dataset = b3db_dataset.drop(columns='logBB')
 
     # Concatenate the Datasets into one DataFrame
-    BBB_dataset = pd.concat([light_dataset, deepred_dataset, molecule_dataset, b3db_dataset]
+    train_dataset = pd.concat([light_dataset, deepred_dataset, molecule_dataset, b3db_dataset]
                             ,ignore_index=True)
     
-    return BBB_dataset
+    return train_dataset
 
 
 def raw_bbb_test_data():
@@ -61,20 +61,49 @@ def raw_bbb_test_data():
     Loads the TITAN-BBB dataset for testing
 
     Returns: 
-        A 'BBB_dataset' containing each compound's SMILES and its respective BBB permeability label 
+        A 'test_dataset' containing each compound's SMILES and its respective BBB permeability label 
         before any curation methods
     '''
 
     # Curate TITAN-BBB Dataset 
-    BBB_dataset = pd.read_csv('data/raw/TITAN-BBB.csv', 
+    test_dataset = pd.read_csv('data/raw/TITAN-BBB.csv', 
                             usecols=['SMILES', 'labels'])
     
-    return BBB_dataset
+    return test_dataset
 
+
+def raw_bbb_external_test_data():
+    '''
+    Loads the DrugBank dataset for external testing
+
+    Returns: 
+        A 'external_test_dataset' containing each compound's SMILES and its respective BBB permeability label
+        before any curation methods
+    '''
+
+    # Curate DrugBank Dataset
+    external_test_dataset = pd.read_csv('data/raw/DrugBank.tsv', 
+                                        usecols=['SMILES', 'labels'],
+                                        sep='\t')
+
+    
+
+    # Convert BBB permeability label to numerical label
+    for index in external_test_dataset.index:
+        if external_test_dataset['labels'][index] == 'BBB+':
+            external_test_dataset.at[index, 'labels'] = '1'
+        elif external_test_dataset['labels'][index] == 'BBB-':
+            external_test_dataset.at[index, 'labels'] = '0'
+
+    # Convert string dtype to int
+    external_test_dataset['labels'] = external_test_dataset['labels'].astype(int)
+
+    return external_test_dataset
+    
 
 def curate_bbb_data(BBB_dataset: pd.DataFrame): 
     '''
-    Curates the BBB dataset from raw_bbb_train_data() with the following curation method: 
+    Curates the BBB dataset from raw_bbb_train_data() or raw_bbb_test_data() with the following curation method: 
         1. Remove all Invalid SMILES from the dataset 
         2. Convert all SMILES to canoncicalized, isomeric SMILES 
         3. Remove salts and solvents from SMILES
@@ -86,7 +115,7 @@ def curate_bbb_data(BBB_dataset: pd.DataFrame):
         9. Remove non-organic SMILES
 
     Args: 
-        BBB_dataset: The Pandas DataFrame from raw_bbb_train_data()
+        BBB_dataset: The Pandas DataFrame from raw_bbb_train_data() or raw_bbb_test_data() 
 
     Returns: 
         A curated 'BBB_data' containing each compound's SMILES and its respective BBB permeability label
@@ -201,11 +230,12 @@ def curate_bbb_data(BBB_dataset: pd.DataFrame):
 def remove_train_test_conflicts(train_dataframe: pd.DataFrame, 
                                 test_dataframe: pd.DataFrame): 
     '''
-    Checks and removes any conflicting SMILES in both the train and test dataset with different permeability labels
+    Checks and removes any conflicting SMILES in both the train and test dataset with different permeability labels.
+    Also removes duplicates from the test dataset that also exist in the train dataset
 
     Args: 
         train_dataframe: The curated Pandas DataFrame from raw_bbb_train_data()
-        test_dataframe: The curated Pandas DataFrame from raw_bbb_test_data()
+        test_dataframe: The curated Pandas DataFrame from raw_bbb_test_data() or raw_bbb_external_test_data()
         
     Returns: 
         A curated train_dataframe and test_dataframe containing each compound's SMILES and its respective BBB permeability label
@@ -232,13 +262,12 @@ def remove_train_test_conflicts(train_dataframe: pd.DataFrame,
     return train_dataframe, test_dataframe
 
 
-
 def calculate_chem_features(BBB_data: pd.DataFrame):
     '''
     Calculates the logP, TPSA, molecular weight, NHOH, and NO count of each SMILES in the dataset. 
 
     Args: 
-        BBB_data: The Pandas DataFrame from curate_bbb_train_data() or curate_bbb_test_data()
+        BBB_data: The Pandas DataFrame from curate_bbb_data()
 
     Returns: 
         A 'BBB_data' containing the logP, TPSA, molecular weight, NHOH, and NO count of each SMILES
@@ -275,11 +304,11 @@ def calculate_chem_features(BBB_data: pd.DataFrame):
 
 def convert_to_selfies(BBB_data: pd.DataFrame): 
     '''
-    Converts the SMILES column in the dataset from curate_bbb_train_data() 
-    or curate_bbb_test_data() to its SELFIES representation
+    Converts the SMILES column in the dataset from curate_bbb_data() 
+    to its SELFIES representation
 
     Args: 
-        BBB_data: The Pandas DataFrame from curate_bbb_train_data() or curate_bbb_test_data()
+        BBB_data: The Pandas DataFrame from curate_bbb_data()
 
     Returns: 
         A 'BBB_data' with a SELFIES and BBB permeability label column
@@ -404,13 +433,6 @@ def space_selfies_strings(data: pd.DataFrame):
     data['SELFIES'] = spaced_selfies 
 
     return data
-
-
-
-
-
-
-
 
 
 
