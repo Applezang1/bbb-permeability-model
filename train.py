@@ -10,6 +10,7 @@ from src.modeling.factory import create_model, dataset_loader
 from src.utils import save_model, load_model, plot_confusion_matrix, test_on_testing_set, EarlyStopping
 from src.modeling.tune import objective
 from tqdm import tqdm
+from transformers import logging
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
     accuracy_score, 
@@ -29,13 +30,16 @@ parser.add_argument('--save',
                     help='Enable saving the model weights into saved_models')
 parser.add_argument ('--validate', 
                      action='store_true', 
-                     help='Enable the model to be tested on the final validation dataset using the MCC score')
+                     help='Enable the model to be tested on the testing dataset')
 parser.add_argument('--train', 
                     action='store_true', 
                     help='Enable model training and validation')
 parser.add_argument('--tune', 
                     type=int, 
                     help='Specify the number of trials for hyperparameter tuning')
+parser.add_argument('--external_validate', 
+                    action='store_true', 
+                    help='Enable the model to be tested on the external testing dataset')
 args = parser.parse_args()
 
 
@@ -58,6 +62,9 @@ CLASSIFIER_DROPOUT = configs['hyperparameters']['CLASSIFIER_DROPOUT']
 column_name = dataset_loader(configs)
 model_name = configs['model_information']['model_name']
 
+# Set verbosity to hide info, warnings, and progress bar
+logging.set_verbosity_error()
+logging.disable_progress_bar()
 
 # Create device-agnostic code 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -77,22 +84,16 @@ optimizer = torch.optim.AdamW(params=model.parameters(),
                               weight_decay=WEIGHT_DECAY, 
                               betas=(BETA1, BETA2))
 
-# Initialize an empty dictionary to store model training results
-final_results = {
-    'train_mcc': [],
-    'train_loss': [],
-    'val_mcc': [],
-    'val_loss': [],
-}
-
-
-### Load in train_val and testing datafranes ###
+### Load in train_val, testing, and external testing datafranes ###
 if column_name == 'SMILES':
     train_val_dataframe = pd.read_csv('data/processed/smiles_train_dataframe.csv')
     test_dataframe = pd.read_csv('data/processed/smiles_test_dataframe.csv')
+    external_test_dataframe = pd.read_csv('data/processed/smiles_external_test_dataframe.csv')
+
 elif column_name == 'SELFIES': 
     train_val_dataframe = pd.read_csv('data/processed/selfies_train_dataframe.csv')
     test_dataframe = pd.read_csv('data/processed/selfies_test_dataframe.csv')
+    external_test_dataframe = pd.read_csv('data/processed/selfies_external_test_dataframe.csv')
 
 
 ### Create testing dataloader 
@@ -101,7 +102,7 @@ test_dataset = Dataset.from_pandas(test_dataframe)
 
 # Implement required spacing to testing dataset's SELFIES strings if the model is SELFIES-TED
 if model_name == 'SELFIES-TED':
-    # Implement spacing to validation dataset
+    # Implement spacing to testing dataset
     test_dataset = test_dataset.to_pandas()
     test_dataset = space_selfies_strings(test_dataset)
     test_dataset = Dataset.from_pandas(test_dataset)
@@ -116,6 +117,29 @@ test_dataloader = create_dataloader(test_dataset,
                                     BATCH_SIZE,
                                     shuffle=False,
                                     num_workers=NUM_WORKERS)
+
+
+### Create external testing dataloader
+# Convert the external testing Pandas DataFrames to HuggingFace datasets
+external_test_dataset = Dataset.from_pandas(external_test_dataframe)
+
+# Implement required spacing to the external testing dataset's SELFIES strings if the model is SELFIES-TED
+if model_name == 'SELFIES-TED':
+    # Implement spacing to external testing dataset
+    external_test_dataset = external_test_dataset.to_pandas()
+    external_test_dataset = space_selfies_strings(external_test_dataset)
+    external_test_dataset = Dataset.from_pandas(external_test_dataset)
+
+# Tokenize the external testing dataset               
+external_test_dataset = tokenize_dataset(external_test_dataset,
+                                         tokenizer, 
+                                         column_name)
+
+# Create PyTorch external testing dataloader
+external_test_dataloader = create_dataloader(external_test_dataset, 
+                                             BATCH_SIZE,
+                                             shuffle=False,
+                                             num_workers=NUM_WORKERS)
 
 
 ### Optimize the hyperparameter based on the argument
@@ -167,7 +191,7 @@ if args.train:
 
     # Define early stopping object
     early_stopping = EarlyStopping(patience=PATIENCE,
-                                   path=f'saved_models/{model_name}.pth')
+                                   path=f'saved_models/hi.pth')
 
     # Split the train_val Pandas DataFrame into training and validation datasets
     train_dataframe, val_dataframe = train_test_split(train_val_dataframe, test_size=VAL_SPLIT, random_state=42)
@@ -177,6 +201,20 @@ if args.train:
 
     # Convert the val Pandas DataFrames to HuggingFace val dataset
     val_dataset = Dataset.from_pandas(val_dataframe)
+
+    # Implement required spacing to validation dataset's SELFIES strings if the model is SELFIES-TED
+    if model_name == 'SELFIES-TED':
+        # Implement spacing to validation dataset
+        val_dataset = val_dataset.to_pandas()
+        val_dataset = space_selfies_strings(val_dataset)
+        val_dataset = Dataset.from_pandas(val_dataset)
+
+    # Implement required spacing to training dataset's SELFIES strings if the model is SELFIES-TED
+    if model_name == 'SELFIES-TED':
+        # Implement spacing to validation dataset
+        train_dataset = train_dataset.to_pandas()
+        train_dataset = space_selfies_strings(train_dataset)
+        train_dataset = Dataset.from_pandas(train_dataset)
 
     # Tokenize the training dataset               
     train_dataset = tokenize_dataset(train_dataset,
@@ -200,13 +238,32 @@ if args.train:
                                        BATCH_SIZE,
                                        shuffle=False, 
                                        num_workers=NUM_WORKERS)
+
+    # Define decay learning rate scheduler 
+    decay_scheduler = torch.optim.lr_scheduler.LinearLR(optimizer=optimizer, 
+                                                        start_factor=1, 
+                                                        end_factor=0.01,
+                                                        total_iters=25*len(train_dataloader))
+
+    # Define warmup learning rate scheduler
+    warmup_scheduler = torch.optim.lr_scheduler.LinearLR(optimizer=optimizer, 
+                                                         start_factor=0.01, 
+                                                         end_factor=1,
+                                                         total_iters=10*len(train_dataloader))
+
+    # Concatenate warmup and decay learning rate schedulers 
+    lr_scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer=optimizer, 
+                                                         schedulers=[warmup_scheduler, decay_scheduler], 
+                                                         milestones=[10*len(train_dataloader)])
+
     
     ### Full Training Loop 
     for epoch in tqdm(range(NUM_EPOCHS)):
         train_loss, train_mcc = train_step(model, 
                                            train_dataloader, 
                                            optimizer, 
-                                           device)
+                                           device, 
+                                           lr_scheduler)
         val_loss, val_mcc = val_step(model, 
                                      val_dataloader, 
                                      device)
@@ -258,7 +315,7 @@ if args.save:
 # Test the saved model on testing dataset based on argument
 if args.validate: 
     model_name = configs['model_information']['model_name']
-    saved_model = load_model(model, f'saved_models/{model_name}.pth')
+    saved_model = load_model(model, f'saved_models/hi.pth')
     test_loss, test_mcc, test_confusion_matrix, test_logits, test_pred_labels, test_labels = test_on_testing_set(saved_model, device, test_dataloader)
     print(f'Testing Loss: {test_loss.item():.3f}')
     print(f'Testing MCC Score: {test_mcc:.3f}')
@@ -272,11 +329,28 @@ if args.validate:
     plot_confusion_matrix(test_confusion_matrix)
 
 
-'''
+# Test the saved model on the external testing dataset based on argument
+if args.external_validate:
+    model_name = configs['model_information']['model_name']
+    saved_model = load_model(model, f'saved_models/hi.pth')
+    ext_test_loss, ext_test_mcc, ext_test_confusion_matrix, ext_test_logits, ext_test_pred_labels, ext_test_labels = test_on_testing_set(saved_model, device, external_test_dataloader)
+    print(f'External Testing Loss: {ext_test_loss.item():.3f}')
+    print(f'External Testing MCC Score: {ext_test_mcc:.3f}')
+    print(f'Accuracy: {accuracy_score(ext_test_labels, ext_test_pred_labels):.3f}')
+    print(f'Precision: {precision_score(ext_test_labels, ext_test_pred_labels):.3f}')
+    print(f'Recall: {recall_score(ext_test_labels, ext_test_pred_labels):.3f}')
+    print(f'F1 Score: {f1_score(ext_test_labels, ext_test_pred_labels):.3f}')
+    print(f'AUC-ROC: {roc_auc_score(ext_test_labels, ext_test_logits):.3f}')
+    print(f'Specificity: {recall_score(ext_test_labels, ext_test_pred_labels, pos_label=0):.3f}')
+    print(f'Total Number of Data Points in Testing Dataset: {len(external_test_dataset)}')
+    plot_confusion_matrix(ext_test_confusion_matrix)
+
+
+
 # Create a summary of the model
 summary(model=model, 
         input_size=(BATCH_SIZE, 512), 
         col_names=['input_size', 'output_size', 'num_params', 'trainable'], 
         dtypes=[torch.long], 
         row_settings=['var_names'], 
-        col_width=20)'''
+        col_width=20)
