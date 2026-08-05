@@ -6,7 +6,8 @@ from src.utils import calculate_mcc
 def train_step(model: torch.nn.Module, 
                train_dataloader: torch.utils.data.DataLoader, 
                optimizer: torch.optim.Optimizer,
-               device: torch.device):
+               device: torch.device, 
+               lr_scheduler: torch.optim.lr_scheduler):
     '''
     Trains a PyTorch model for one epoch 
 
@@ -59,6 +60,9 @@ def train_step(model: torch.nn.Module,
 
         # Optimizer step
         optimizer.step()
+
+        # Scheduler step
+        lr_scheduler.step()
 
     # Calculate final training loss and mcc score
     train_mcc = calculate_mcc(train_tp, train_tn, train_fp, train_fn)
