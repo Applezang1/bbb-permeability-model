@@ -3,34 +3,6 @@ from torch.utils.data import DataLoader
 import pandas as pd, torch
 from transformers import PreTrainedTokenizerBase
 from src.data_processing.dataset_fn import augment_data
-
-
-def create_dataset(data: pd.DataFrame, 
-                   test_split: float): 
-    '''
-    Creates training + validation and testing PyTorch datasets from the inputted Pandas DataFrame 
-
-    Args: 
-        data: The Pandas DataFrame specifically with a column of SMILES/SELFIES and 
-        a column with BBB permeability label (name: labels)
-        test_split: Percentage of data to be used for testing from the entire dataset
-        
-    Returns: 
-        Training + validation and testing SMILES/SELFIES HuggingFace datasets
-    ''' 
-
-    # Load inputted Pandas DataFrame into a HuggingFace dataset
-    dataset = Dataset.from_pandas(data) 
-
-    # Split the dataset into training + validation and testing datasets
-    dataset = dataset.class_encode_column('labels')
-    split_dataset = dataset.train_test_split(test_size=test_split, 
-                                             stratify_by_column='labels')
-    train_val_dataset = split_dataset['train']
-    testing_dataset = split_dataset['test']
-
-
-    return train_val_dataset, testing_dataset
         
 
 def augment_dataset(train_dataset: Dataset,
