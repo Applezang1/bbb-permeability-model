@@ -85,12 +85,13 @@ def objective(trial,
             val_dataset = space_selfies_strings(val_dataset)
             val_dataset = Dataset.from_pandas(val_dataset)
 
-        # Augment the training dataset
-        train_dataset = augment_dataset(train_dataset,  
-                                        num_augmentations, 
-                                        column_name, 
-                                        model_name)
-
+        # Implement required spacing to training dataset's SELFIES strings if the model is SELFIES-TED
+        if model_name == 'SELFIES-TED':
+            # Implement spacing to validation dataset
+            train_dataset = train_dataset.to_pandas()
+            train_dataset = space_selfies_strings(train_dataset)
+            train_dataset = Dataset.from_pandas(train_dataset)
+        
         # Tokenize the training and validation dataset               
         train_dataset = tokenize_dataset(train_dataset,
                                          tokenizer, 
