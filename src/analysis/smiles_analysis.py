@@ -16,9 +16,11 @@ for smiles in BBB_data['SMILES']:
     mol_list.append(Chem.MolFromSmiles(smiles))
 BBB_data['Mol'] = mol_list
 
+
 ### Print BBB+ and BBB- count ###
 print(f"BBB+ Count: {(BBB_data['labels'] == 1).sum()}")
 print(f"BBB- Count: {(BBB_data['labels'] == 0).sum()}")
+
 
 ### Check for Nonunique SMILES ### 
 SMILES_count = BBB_data['SMILES'].value_counts()
@@ -29,7 +31,6 @@ print(f"Total Number of Instances of Nonunique SMILES: {nonunique_SMILES.sum()}"
 print(f"Total Number of Instances of Unique SMILES: {len(BBB_data['SMILES'])-nonunique_SMILES.sum()}")
 print() 
 
-
 # Plot a Pie Chart representing the number of nonunique SMILES
 explode = (0.1, 0)
 plt.pie(labels=[f'Non-unique SMILES\n({nonunique_SMILES.sum()})', f'Unique SMILES\n({len(BBB_data['SMILES'])-nonunique_SMILES.sum()})'], 
@@ -39,8 +40,8 @@ plt.pie(labels=[f'Non-unique SMILES\n({nonunique_SMILES.sum()})', f'Unique SMILE
         wedgeprops={'edgecolor': 'white', 'linewidth': 2}, 
         textprops={'fontsize': 14}, 
         shadow=True, 
-        explode=explode
-        ,colors=['#FF6188', '#AB9DF2'])
+        explode=explode,
+        colors=['#FF6188', '#AB9DF2'])
 plt.legend(bbox_to_anchor=(1, 0, 0.5, 1))
 plt.show()
 
@@ -181,11 +182,11 @@ def plot_bar_graph(data: pd.DataFrame,
     
     # Plot the bar graph
     ax = sns.barplot(x=[name_with_property, name_without_property], 
-                y=[property_count, len(data['SMILES'])-property_count], 
-                edgecolor='black', 
-                linewidth=1, 
-                hue=[name_with_property, name_without_property], 
-                palette=palette)
+                     y=[property_count, len(data['SMILES'])-property_count], 
+                     edgecolor='black', 
+                     linewidth=1, 
+                     hue=[name_with_property, name_without_property], 
+                     palette=palette)
     
     # Label each bar according to the defined set of labels
     for idx, i in enumerate(ax.containers):
