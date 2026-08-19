@@ -1,5 +1,7 @@
-import torch, numpy as np, seaborn as sns, matplotlib.pyplot as plt
+import torch, numpy as np, seaborn as sns, matplotlib.pyplot as plt, pandas as pd
 from pathlib import Path
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
 
 def save_model(model_parameters, 
@@ -146,6 +148,11 @@ def test_on_testing_set(model: torch.nn.Module,
     return test_loss, test_mcc, test_confusion_matrix, test_logits_list, test_pred_label_list, test_label_list
 
 
+def raise_err():
+    '''Raises a generic ValueError'''
+    raise ValueError()
+
+
 def plot_confusion_matrix(confusion_matrix_values: list[int]):
     '''
     Plots a 2x2 Confusion Matrix of TN, TP, FP, FN. 
@@ -224,3 +231,102 @@ class EarlyStopping:
         '''Saves model when validation MCC increases.'''
         torch.save(model.state_dict(), self.path)
         self.val_mcc_min = val_mcc
+
+
+def minimize_with_rdkit(input_molfname,
+                        sdf_out,
+                        smi_col=None,
+                        mol_name_col=None,
+                        maxIters=400,
+                        force_field="MMFF94s",
+                        sep=r"\s+"):
+    """
+    Add hydrogen for 3D coordinates and minimize the geometry with RdKit.
+    Function originates from B3clf
+    """
+    removed_molecule = 0
+    removed_molecules_list = []
+    # load molecules
+    if input_molfname.lower().endswith(".smi") or input_molfname.lower().endswith(".csv"):
+        df_mol = pd.read_csv(input_molfname, sep=sep, engine="python", header=None)
+        if df_mol.shape[1] == 1:
+            # Case for only SMILES column
+            smile_list = df_mol.iloc[:, -1].to_list()
+            mol_name_list = df_mol.iloc[:, -1].to_list()
+        else:
+            # Case for SMILES and MOL name columns
+            if smi_col is None:
+                smile_list = df_mol.iloc[:, 0].to_list()
+            else:
+                smile_list = df_mol[smi_col].to_list()
+
+            if mol_name_col is None:
+            # todo: use name if column name is valid
+                mol_name_list = df_mol.iloc[:, -1].to_list()
+            else:
+                mol_name_list = df_mol[mol_name_col].to_list()
+
+        mols = []
+        for idx, smi in enumerate(smile_list):
+            mol = Chem.MolFromSmiles(smi)
+            # This will overwrite
+            if mol is not None:
+                mol.SetProp("_Name", mol_name_list[idx])
+                mols.append(mol)
+
+    writer = Chem.SDWriter(sdf_out)
+    for idx, mol in enumerate(mols):
+        new_mol = mol
+        mol = Chem.AddHs(mol)
+        if force_field == "MMFF94s":
+            AllChem.EmbedMolecule(mol, randomSeed=999)
+            # the following code will raise some errors
+            try:
+                mini_tag = AllChem.MMFFOptimizeMolecule(mol, force_field, maxIters=maxIters)
+                # 0 optimize converged
+                # -1 can not set up force field
+                # 1 more iterations required
+                if mini_tag == 0:
+                     writer.write(mol)
+                else:
+                    if mini_tag == 1:
+                        AllChem.MMFFOptimizeMolecule(mol, force_field, maxIters=maxIters * 2)
+                    elif mini_tag == -1:
+                        AllChem.UFFOptimizeMolecule(mol, maxIters=400)
+                    writer.write(mol)
+                
+            except (ValueError, RuntimeError) as e:
+                print(f'Skipping {mol} due to Bad Conformer Id') 
+                removed_molecule+=1
+                removed_molecules_list.append(Chem.MolToSmiles(new_mol))
+                continue
+
+        elif force_field == "uff":
+            # use uff force field if possible
+            AllChem.EmbedMolecule(mol, randomSeed=999)
+            # the following code will raise some errors
+            try: 
+                mini_tag = AllChem.UFFOptimizeMolecule(mol, maxIters=maxIters)
+                # 0 optimize converged
+                # -1 can not set up force field
+                # 1 more iterations required
+                if mini_tag == 0:
+                    writer.write(mol)
+                else:
+                    if mini_tag == 1:
+                        AllChem.UFFOptimizeMolecule(mol, maxIters=maxIters * 2)
+                    elif mini_tag == -1:
+                        AllChem.MMFFOptimizeMolecule(mol, "MMFF94s", maxIters=maxIters)
+                    writer.write(mol)
+            except (ValueError, RuntimeError) as e:
+                print(f'Skipping {mol} due to Bad Conformer Id') 
+                removed_molecule+=1
+                removed_molecules_list.append(Chem.MolToSmiles(new_mol))
+                continue
+
+        else:
+            raise NotImplementedError("This method is not implemented yet.")
+
+    print(f'Number of compounds removed: {removed_molecule}')
+    print(f'Removed molecules: {removed_molecules_list}')
+    writer.close()
