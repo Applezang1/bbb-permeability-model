@@ -1,6 +1,6 @@
 import torch, pandas as pd, numpy as np
 from tqdm import tqdm
-from src.data_processing.dataloaders import create_dataloader, augment_dataset, tokenize_dataset
+from src.data_processing.dataloaders import create_dataloader, tokenize_dataset
 from src.data_processing.dataset_fn import space_selfies_strings
 from src.modeling.engine import train_step, val_step
 from datasets import Dataset
@@ -14,7 +14,6 @@ def objective(trial,
               model_name: str, 
               device: torch.device,
               column_name: str, 
-              num_augmentations: int,
               num_epochs: int, 
               batch_size: int, 
               num_workers: int,
@@ -30,7 +29,6 @@ def objective(trial,
         model_name: The name of the model whose hyperparameters will be optimized
         device: Device used for training and validation
         column_name: The column name representing the chemicals in the dataset (SMILES/SELFIES)
-        num_augmentations: The number of times to perform data augmentation on the training dataset 
         num_epochs: The number of epochs to train and validate the model for
         batch_size: The size of each batch of data in the training and validation dataset 
         num_workers: Number of CPUs to dedicate to creating dataloaders
