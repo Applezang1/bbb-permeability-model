@@ -1,6 +1,7 @@
 import pygal
 from pygal.style import Style
 
+
 # Define a custom style for the radar chart
 custom_style = Style(
     # Set background color
