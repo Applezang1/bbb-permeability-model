@@ -330,3 +330,37 @@ def minimize_with_rdkit(input_molfname,
     print(f'Number of compounds removed: {removed_molecule}')
     print(f'Removed molecules: {removed_molecules_list}')
     writer.close()
+
+
+def count_classes(pred_dataframe: pd.DataFrame,
+                  test_dataframe: list, 
+                  pred_smi_column: str):
+    '''
+    Determines the SMILES that were filtered out of the testing dataframe for prediction and
+    calculates the BBB+ and BBB- count of the filtered SMILES list
+    
+    Args: 
+        pred_dataframe: The dataframe containing the curated SMILES and its respective label
+        test_dataframe: The original testing dataframe containing SMILES (col_name: 'SMILES') and its respective label (col_name: 'labels')
+        pred_smi_column: The name of the column that contains the SMILES in pred_dataframe
+    
+    Returns: 
+        The BBB+ and BBB- count of the filtered SMILES list
+    '''
+
+    # Create a dataframe containing the filtered SMILES
+    filtered_smiles_dataframe = test_dataframe[~test_dataframe['SMILES'].isin(pred_dataframe[pred_smi_column])].copy()
+
+    # Initialize variables to store the BBB+ and BBB- count 
+    positive_count, negative_count = 0, 0
+
+    # Count the number of BBB+ and BBB- compounds: 
+    for smiles in filtered_smiles_dataframe['SMILES']:
+        if filtered_smiles_dataframe.loc[filtered_smiles_dataframe['SMILES'] == smiles, 'labels'].values == 1:
+            positive_count += 1 
+        elif filtered_smiles_dataframe.loc[filtered_smiles_dataframe['SMILES'] == smiles, 'labels'].values == 0: 
+            negative_count += 1
+
+    # Print the BBB+ and BBB- count
+    print(f'{positive_count} BBB+ compounds were filtered from the testing dataset')
+    print(f'{negative_count} BBB- compounds were filtered from the testing dataset')
