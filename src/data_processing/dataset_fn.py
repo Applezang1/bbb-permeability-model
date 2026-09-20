@@ -18,19 +18,23 @@ def raw_bbb_train_data():
     # Curate LightBBB Dataset
     light_dataset = pd.read_csv('data/raw/LightBBB.csv', 
                                 usecols=['SMILES', 'labels'])
+    light_dataset['Source'] = 'LightBBB'
 
     # Curate DeePred Datset
     deepred_dataset = pd.read_csv('data/raw/DeePred.csv', 
                                   usecols=['SMILES', 'labels'])
+    deepred_dataset['Source'] = 'DeePred-BBB'
 
     # Curate MoleculeNet Dataset
     molecule_dataset = pd.read_csv('data/raw/MoleculeNet.csv', 
                                    usecols=['SMILES', 'labels'])
+    molecule_dataset['Source'] = 'MoleculeNet'
 
     # Curate B3DB Dataset
     b3db_dataset = pd.read_csv('data/raw/B3DB.tsv', 
                                usecols=['SMILES', 'logBB'],
                                sep='\t')
+    b3db_dataset['Source'] = 'B3DB'
     
     # Filter the logBB column of the B3DB Dataset 
     dropped_indices = []
@@ -130,7 +134,7 @@ def curate_bbb_data(BBB_dataset: pd.DataFrame):
         mol = Chem.MolFromSmiles(smiles)
         if mol is None: 
             invalid_SMILES.append(smiles) 
-    
+
     BBB_data = BBB_dataset[~BBB_dataset['SMILES'].isin(invalid_SMILES)]
 
     ### 2. Canonicalize and convert SMILES to isomeric forms ###
@@ -250,7 +254,7 @@ def remove_train_test_conflicts(train_dataframe: pd.DataFrame,
     for smiles in duplicate_train_dataset['SMILES']:
         if duplicate_train_dataset.loc[duplicate_train_dataset['SMILES'] == smiles, 'labels'].item() != duplicate_test_dataset.loc[duplicate_test_dataset['SMILES'] == smiles, 'labels'].item():
             conflicting_labeled_smiles.append(smiles)
-    
+
     # Remove conflicting SMILES in the training and testing dataframe
     test_dataframe = test_dataframe[~test_dataframe['SMILES'].isin(conflicting_labeled_smiles)].copy()
     train_dataframe = train_dataframe[~train_dataframe['SMILES'].isin(conflicting_labeled_smiles)].copy()
@@ -433,7 +437,6 @@ def space_selfies_strings(data: pd.DataFrame):
     data['SELFIES'] = spaced_selfies 
 
     return data
-
 
 
 
