@@ -85,7 +85,8 @@ def tokenize_dataset(dataset: Dataset,
         return tokenizer(batch[column_name], 
                          padding='max_length', 
                          truncation=True,
-                         max_length=128,)
+                         max_length=128,
+                         return_special_tokens_mask=True)
     
     dataset = dataset.map(tokenization, batched=True)
 
