@@ -134,3 +134,53 @@ for property in properties_to_check:
       outlier_detection(BBB_data, 0, property)
       print()
 
+### Generate Violin Plots to show the distribution of each molecular property for BBB+ and BBB- class ###
+plt.figure(figsize=(7, 5))
+
+# Violin Plot of logP for BBB+ and BBB-
+label_names = {0: 'BBB-', 1: 'BBB+'}
+sns.violinplot(data=BBB_data, 
+               x='logP', 
+               y='labels', 
+               hue='labels', 
+               orient='h', 
+               formatter=label_names, 
+               legend=False)
+plt.xlabel('logP')
+plt.show()
+
+# Violin Plot of TPSA for BBB+ and BBB-
+plt.figure(figsize=(7, 5))
+sns.violinplot(data=BBB_data, 
+               x='TPSA', 
+               y='labels', 
+               hue='labels', 
+               orient='h', 
+               formatter=label_names, 
+               legend=False)
+plt.xlabel('TPSA')
+plt.show()
+
+# Violin Plot of Molecular Weight for BBB+ and BBB-
+plt.figure(figsize=(7, 5))
+sns.violinplot(data=BBB_data, 
+               x='Molecular Weight', 
+               y='labels', 
+               hue='labels', 
+               orient='h', 
+               formatter=label_names, 
+               legend=False)
+plt.xlabel('Molecular Weight')
+plt.show()
+
+# Violin Plot of NHOH Count for BBB+ and BBB-
+plt.figure(figsize=(7, 5))
+sns.violinplot(data=BBB_data, 
+               x='NHOH Count', 
+               y='labels', 
+               hue='labels', 
+               orient='h', 
+               formatter=label_names, 
+               legend=False)
+plt.xlabel('NHOH Count')
+plt.show()
