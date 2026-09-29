@@ -79,16 +79,16 @@ def tokenize_dataset(dataset: Dataset,
         The tokenized PyTorch dataset
     ''' 
 
-    # Tokenize the dataset
-    def tokenization(batch): 
-        '''Tokenizes inputs'''
-        return tokenizer(batch[column_name], 
-                         padding='max_length', 
-                         truncation=True,
-                         max_length=128,
-                         return_special_tokens_mask=True)
-    
-    dataset = dataset.map(tokenization, batched=True)
+    cache_signature = f"chemberta_tokenized_{column_name}_len128"
+
+    # Tokenize the dataset    
+    dataset = dataset.map(lambda batch: tokenizer(batch[column_name], 
+                                                  padding='max_length', 
+                                                  truncation=True,
+                                                  max_length=128,
+                                                  return_special_tokens_mask=True),
+                          batched=True, 
+                          new_fingerprint=cache_signature)
 
     # Remove unnecessary columns
     dataset = dataset.remove_columns(column_name)
