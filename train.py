@@ -63,11 +63,11 @@ NUM_WORKERS = configs['hyperparameters']['NUM_WORKERS']
 NUM_EPOCHS = configs['hyperparameters']['NUM_EPOCHS']
 LR = configs['hyperparameters']['LR']
 WEIGHT_DECAY = configs['hyperparameters']['WEIGHT_DECAY']
-NUM_SPLITS = configs['hyperparameters']['NUM_SPLITS']
+NUM_SPLITS_HYP = configs['hyperparameters']['NUM_SPLITS_HYP']
 BETA1 = configs['hyperparameters']['BETA1']
 BETA2 = configs['hyperparameters']['BETA2']
 CLASSIFIER_DROPOUT = configs['hyperparameters']['CLASSIFIER_DROPOUT']
-NUM_SPLITS = configs['hyperparameters']['NUM_SPLITS']
+NUM_SPLITS_TRAIN = configs['hyperparameters']['NUM_SPLITS_TRAIN']
 column_name = dataset_loader(configs)
 model_name = configs['model_information']['model_name']
 
@@ -103,6 +103,14 @@ elif column_name == 'SELFIES':
     test_dataframe = pd.read_csv('data/processed/selfies_test_dataframe.csv')
     external_test_dataframe = pd.read_csv('data/processed/selfies_external_test_dataframe.csv')
 
+# Create a summary of the model
+summary(model=model, 
+        input_size=(BATCH_SIZE, 512), 
+        col_names=['input_size', 'output_size', 'num_params', 'trainable'], 
+        dtypes=[torch.long], 
+        row_settings=['var_names'], 
+        col_width=20)
+
 
 ### Optimize the hyperparameter based on the argument
 if args.tune:
@@ -118,7 +126,7 @@ if args.tune:
                                            NUM_EPOCHS, 
                                            BATCH_SIZE, 
                                            NUM_WORKERS, 
-                                           NUM_SPLITS), 
+                                           NUM_SPLITS_HYP), 
                                            n_trials=args.tune)
     best_lr = study.best_params['lr']
     best_weight_decay = study.best_params['weight_decay']
@@ -144,7 +152,7 @@ if args.tune:
 # Implement K-Fold cross validation depending on argument
 if args.k_fold: 
     # Define Stratified K-Fold Cross Validation Object
-    skf = StratifiedKFold(n_splits=NUM_SPLITS, shuffle=True, random_state=42)
+    skf = StratifiedKFold(n_splits=NUM_SPLITS_TRAIN, shuffle=True, random_state=42)
 
     # Implement K-Fold cross validation
     for fold, (train_index, test_index) in enumerate(skf.split(train_val_dataframe, train_val_dataframe['labels'])):
@@ -323,7 +331,7 @@ if args.k_fold_test:
     
     ### Test the model on its respective validation testing, and external testing dataloader ###
     # Define Stratified K-Fold Cross Validation Object
-    skf = StratifiedKFold(n_splits=NUM_SPLITS, shuffle=True, random_state=42)
+    skf = StratifiedKFold(n_splits=NUM_SPLITS_TRAIN, shuffle=True, random_state=42)
     
     # Test models on their respective validation splits
     for fold, (train_index, test_index) in enumerate(skf.split(train_val_dataframe, train_val_dataframe['labels'])):
@@ -346,14 +354,14 @@ if args.k_fold_test:
         
         # Tokenize the validation dataset
         val_dataset = tokenize_dataset(val_dataset, 
-                                        tokenizer, 
-                                        column_name)
+                                       tokenizer, 
+                                       column_name)
                     
         # Create PyTorch validation dataloader
         val_dataloader = create_dataloader(val_dataset, 
-                                        BATCH_SIZE, 
-                                        shuffle=False,
-                                        num_workers=NUM_WORKERS)
+                                           BATCH_SIZE, 
+                                           shuffle=False,
+                                           num_workers=NUM_WORKERS)
 
         # Run each model through its respective validation dataset
         val_loss, val_mcc, val_confusion_matrix, val_logits, val_pred_labels, val_labels = test_on_testing_set(saved_model, 
@@ -739,11 +747,4 @@ if args.external_test:
     plot_confusion_matrix(ext_test_confusion_matrix)
 
 
-'''
-# Create a summary of the model
-summary(model=model, 
-        input_size=(BATCH_SIZE, 512), 
-        col_names=['input_size', 'output_size', 'num_params', 'trainable'], 
-        dtypes=[torch.long], 
-        row_settings=['var_names'], 
-        col_width=20)'''
+
