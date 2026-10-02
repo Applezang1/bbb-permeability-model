@@ -48,7 +48,7 @@ def raw_bbb_train_data():
             b3db_bbb_class.append(bbb_class)
         else: 
             dropped_indices.append(index)
-
+    
     b3db_dataset = b3db_dataset.drop(index=dropped_indices).copy()
     b3db_dataset['labels'] = b3db_bbb_class
     b3db_dataset = b3db_dataset.drop(columns='logBB')
