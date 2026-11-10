@@ -80,8 +80,8 @@ for mol, smiles in zip(BBB_data['Mol'], BBB_data['SMILES']):
         else: 
             pass 
 
-print(f"Number of Canonical + Isomeric SMILES: {canonical_smiles_count}")
-print(f"Number of Non Canonical + Isomeric SMILES: {len(BBB_data['SMILES'])-canonical_smiles_count}") 
+print(f"Number of Canonical SMILES: {canonical_smiles_count}")
+print(f"Number of Non Canonical SMILES: {len(BBB_data['SMILES'])-canonical_smiles_count}") 
 print()
 
 # Plot the number of canonical and non canonical SMILES on a pie chart
