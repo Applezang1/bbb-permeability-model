@@ -9,11 +9,11 @@ def create_dataset(data: pd.DataFrame,
                    val_split: float, 
                    random_seed: int): 
     '''
-    Creates training and validation PyTorch datasets from the inputted Pandas DataFrame 
+    Creates training and validation HuggingFace datasets from the inputted Pandas DataFrame 
 
     Args: 
-        data: The Pandas DataFrame specifically with a column of SMILES/SELFIES and 
-        a column with BBB permeability label (name: labels)
+        data: The Pandas DataFrame with columns for SMILES/SELFIES and 
+        BBB permeability label (name: labels)
         val_split: Percentage of data to be used for validating from the entire dataset
         random_seed: The random seed for the train_val split
         
@@ -79,7 +79,9 @@ def tokenize_dataset(dataset: Dataset,
         The tokenized PyTorch dataset
     ''' 
 
-    cache_signature = f"chemberta_tokenized_{column_name}_len128"
+    # Define a cache signature for reproducibility
+    tokenizer_name = tokenizer.name_or_path.replace("/", "_")
+    cache_signature = f"{dataset.fingerprint}_{tokenizer_name}_{column_name}_len128"
 
     # Tokenize the dataset    
     dataset = dataset.map(lambda batch: tokenizer(batch[column_name], 
@@ -103,15 +105,18 @@ def tokenize_dataset(dataset: Dataset,
 def create_dataloader(dataset: torch.utils.data.Dataset,   
                       batch_size: int, 
                       shuffle: bool,
-                      num_workers=0): 
+                      generator: torch.Generator,
+                      num_workers=0, 
+                      ): 
     '''
     Converts a PyTorch dataset to a PyTorch dataloader
     
     Args: 
         dataset: PyTorch dataset to be converted
-        batch_size: The size of each batch of data in the training and testing dataset 
+        batch_size: The size of each batch of data in the training and validation dataset 
         num_workers: Number of CPUs to dedicate to creating dataloaders
         shuffle: A boolean that dictates whether the dataloader is shuffled or not
+        generator: A PyTorch pseudo-random number generator
 
     Returns: 
         A PyTorch dataloader    
@@ -123,7 +128,8 @@ def create_dataloader(dataset: torch.utils.data.Dataset,
         batch_size=batch_size, 
         shuffle=shuffle, 
         num_workers=num_workers, 
-        pin_memory=True
+        pin_memory=True, 
+        generator=generator
     )
 
 
