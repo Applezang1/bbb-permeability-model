@@ -9,6 +9,11 @@ from src.utils import load_model
 from datasets import Dataset
 
 
+# Define generator for dataloader shuffle reproducibility
+g = torch.Generator()
+g.manual_seed(42)
+
+
 # Define training, testing, and external testing datasets 
 test_dataset = curate_bbb_data(raw_bbb_test_data())
 external_test_dataset = curate_bbb_data(raw_bbb_external_test_data())
@@ -212,6 +217,7 @@ train_dataset = tokenize_dataset(train_dataset,
 train_dataloader = create_dataloader(train_dataset, 
                                      batch_size=32, 
                                      shuffle=False,
+                                     generator=g,
                                      num_workers=0)
 
 # Create device-agnostic code 
