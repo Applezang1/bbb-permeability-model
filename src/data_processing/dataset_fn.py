@@ -15,22 +15,22 @@ def raw_bbb_train_data():
         before any curation methods
     '''
 
-    # Curate LightBBB Dataset
+    # Obtain LightBBB Dataset
     light_dataset = pd.read_csv('data/raw/LightBBB.csv', 
                                 usecols=['SMILES', 'labels'])
     light_dataset['Source'] = 'LightBBB'
 
-    # Curate DeePred Datset
+    # Obtain DeePred Datset
     deepred_dataset = pd.read_csv('data/raw/DeePred.csv', 
                                   usecols=['SMILES', 'labels'])
     deepred_dataset['Source'] = 'DeePred-BBB'
 
-    # Curate MoleculeNet Dataset
+    # Obtain MoleculeNet Dataset
     molecule_dataset = pd.read_csv('data/raw/MoleculeNet.csv', 
                                    usecols=['SMILES', 'labels'])
     molecule_dataset['Source'] = 'MoleculeNet'
 
-    # Curate B3DB Dataset
+    # Obtain B3DB Dataset
     b3db_dataset = pd.read_csv('data/raw/B3DB.tsv', 
                                usecols=['SMILES', 'logBB'],
                                sep='\t')
@@ -69,7 +69,7 @@ def raw_bbb_test_data():
         before any curation methods
     '''
 
-    # Curate TITAN-BBB Dataset 
+    # Obtain TITAN-BBB Dataset 
     test_dataset = pd.read_csv('data/raw/TITAN-BBB.csv', 
                             usecols=['SMILES', 'labels'])
     
@@ -85,7 +85,7 @@ def raw_bbb_external_test_data():
         before any curation methods
     '''
 
-    # Curate DrugBank Dataset
+    # Obtain DrugBank Dataset
     external_test_dataset = pd.read_csv('data/raw/DrugBank.tsv', 
                                         usecols=['SMILES', 'labels'],
                                         sep='\t')
@@ -107,9 +107,9 @@ def raw_bbb_external_test_data():
 
 def curate_bbb_data(BBB_dataset: pd.DataFrame): 
     '''
-    Curates the BBB dataset from raw_bbb_train_data() or raw_bbb_test_data() with the following curation method: 
+    Curates the BBB dataset from raw_bbb_train_data(), raw_bbb_test_data(), or raw_bbb_external_test_data() with the following curation method: 
         1. Remove all Invalid SMILES from the dataset 
-        2. Convert all SMILES to canoncicalized, isomeric SMILES 
+        2. Convert all SMILES to canoncicalized SMILES 
         3. Remove salts and solvents from SMILES
         4. Neutralize non-neutral SMILES
         5. Remove explicit hydrogens in SMILES
@@ -119,7 +119,7 @@ def curate_bbb_data(BBB_dataset: pd.DataFrame):
         9. Remove non-organic SMILES
 
     Args: 
-        BBB_dataset: The Pandas DataFrame from raw_bbb_train_data() or raw_bbb_test_data() 
+        BBB_dataset: The Pandas DataFrame from raw_bbb_train_data(), raw_bbb_test_data(), or raw_bbb_external_test_data() 
 
     Returns: 
         A curated 'BBB_data' containing each compound's SMILES and its respective BBB permeability label
@@ -216,7 +216,7 @@ def curate_bbb_data(BBB_dataset: pd.DataFrame):
     BBB_data.drop_duplicates(subset='SMILES', keep='first', inplace=True)
     BBB_data.reset_index(drop=True, inplace=True) 
 
-    ### 9. Check for SMILES with atomic numbers greater than 20 ###
+    ### 9. Check for SMILES with inorganic atomic numbers ###
     inorganic_smiles = []
     allowed_atomic_nums = {1, 5, 6, 7, 8, 9, 15, 16, 17, 35, 53}
     for mol in BBB_data['Mol']:
@@ -234,8 +234,8 @@ def curate_bbb_data(BBB_dataset: pd.DataFrame):
 def remove_train_test_conflicts(train_dataframe: pd.DataFrame, 
                                 test_dataframe: pd.DataFrame): 
     '''
-    Checks and removes any conflicting SMILES in both the train and test dataset with different permeability labels.
-    Also removes duplicates from the test dataset that also exist in the train dataset
+    Removes any conflicting SMILES with different permeability labels from the testing dataframe
+    Also removes overlaps from the testing dataset
 
     Args: 
         train_dataframe: The curated Pandas DataFrame from raw_bbb_train_data()
@@ -245,7 +245,7 @@ def remove_train_test_conflicts(train_dataframe: pd.DataFrame,
         A curated train_dataframe and test_dataframe containing each compound's SMILES and its respective BBB permeability label
     '''
 
-    # Make training and testing datasets where each SMILES exists in both datasets 
+    # Define training and testing datasets to contain SMILES from both datasets 
     duplicate_train_dataset = train_dataframe[train_dataframe['SMILES'].isin(test_dataframe['SMILES'])].reset_index(drop=True)
     duplicate_test_dataset = test_dataframe[test_dataframe['SMILES'].isin(train_dataframe['SMILES'])].reset_index(drop=True)
 
@@ -255,9 +255,8 @@ def remove_train_test_conflicts(train_dataframe: pd.DataFrame,
         if duplicate_train_dataset.loc[duplicate_train_dataset['SMILES'] == smiles, 'labels'].item() != duplicate_test_dataset.loc[duplicate_test_dataset['SMILES'] == smiles, 'labels'].item():
             conflicting_labeled_smiles.append(smiles)
 
-    # Remove conflicting SMILES in the training and testing dataframe
+    # Remove conflicting SMILES in the testing dataframe
     test_dataframe = test_dataframe[~test_dataframe['SMILES'].isin(conflicting_labeled_smiles)].copy()
-    train_dataframe = train_dataframe[~train_dataframe['SMILES'].isin(conflicting_labeled_smiles)].copy()
 
     # Removes SMILES from testing dataframe that also exist in training dataframe
     test_dataframe = test_dataframe[~test_dataframe['SMILES'].isin(train_dataframe['SMILES'].tolist())].copy()
@@ -277,15 +276,12 @@ def calculate_chem_features(BBB_data: pd.DataFrame):
         A 'BBB_data' containing the logP, TPSA, molecular weight, NHOH, and NO count of each SMILES
     '''
     
-    # Initialize empty lists to store molecular features and invalid SMILES
+    # Initialize empty lists to store molecular features
     logP = []
     tpsa = []
     mol_weight = []
     NHOH_count = [] 
     NO_count = []
-
-    # Prevent error messages from invalid SMILES configurations
-    RDLogger.DisableLog('rdApp.*')
 
     # Iterate through the dataset to calculate the logP, TPSA, molecular weight, NHOH, and NO count 
     for smiles in BBB_data['SMILES']:
@@ -336,7 +332,8 @@ def convert_to_selfies(BBB_data: pd.DataFrame):
 def augment_data(train_data: Dataset, 
                  num_augmentations: int, 
                  column_name: str, 
-                 model_name: str):
+                 model_name: str,
+                 random_seed: int):
     '''
     Augment the SMILES/SELFIES training dataset to include alternate representations of the same SMILES/SELFIES
 
@@ -345,17 +342,15 @@ def augment_data(train_data: Dataset,
         num_augmentations: The number of times to perform data augmentation
         column_name: The column name representing the chemicals in the dataset (SMILES/SELFIES)
         model_name: The name of the model that will be trained by the training dataset
+        random_seed: The random seed for SMILES/SELFIES augmentation
 
     Returns: 
         A training HuggingFace DataFrame with augmented data
     ''' 
 
-    # Prevent error messages from invalid SMILES configurations
-    RDLogger.DisableLog('rdApp.*')
-
     # Convert the inputted HuggingFace DataFrame into a Pandas DataFrame for compatability
     train_data = train_data.to_pandas()
-    rng = np.random.default_rng() 
+    rng = np.random.default_rng(random_seed) 
 
     # Initialize lists for storage
     augmented_list = []
@@ -369,7 +364,7 @@ def augment_data(train_data: Dataset,
                 mol = Chem.MolFromSmiles(smiles)
                 new_order = list(range(mol.GetNumAtoms()))
                 rng.shuffle(new_order)
-                new_mol = Chem.RenumberAtoms(mol,new_order)
+                new_mol = Chem.RenumberAtoms(mol, new_order)
                 new_smiles = Chem.MolToSmiles(new_mol, canonical=False)
 
                 # Store the smiles and labels into respective lists
@@ -416,7 +411,7 @@ def augment_data(train_data: Dataset,
 
 def space_selfies_strings(data: pd.DataFrame):
     '''
-    Spaces all the SELFIES tokens for each SELFIES in the SELFIES column of the inputted DataFrame
+    Spaces all the SELFIES tokens for each SELFIES in the inputted DataFrame
 
     Args: 
         data: The Pandas DataFrame to space the SELFIES tokens on
