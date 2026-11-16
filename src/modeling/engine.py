@@ -16,6 +16,7 @@ def train_step(model: torch.nn.Module,
         train_dataloader: The PyTorch dataloader to train the model with 
         optimizer: The PyTorch optimizer used to minimize the loss function
         device: Device used for training
+        lr_scheduler: Learning rate scheduler used to modify learning rate during training
 
     Returns: 
         Training mcc score and training loss after one epoch
@@ -38,10 +39,11 @@ def train_step(model: torch.nn.Module,
         loss = output.loss 
         train_loss += loss
 
-        # Calculate training mcc score 
+        # Calculate the prediction labels 
         train_logit = output.logits 
         train_pred_label = train_logit.argmax(dim=1) 
 
+        # Calculate TP, FP, TN, FN for MCC calculation
         for idx in range(len(train_pred_label)):
             if train_pred_label[idx] == 1 and input['labels'][idx] == 1: 
                 train_tp += 1 
@@ -61,7 +63,7 @@ def train_step(model: torch.nn.Module,
         # Optimizer step
         optimizer.step()
 
-        # Scheduler step
+        # Learning scheduler step
         lr_scheduler.step()
 
     # Calculate final training loss and mcc score
@@ -78,9 +80,9 @@ def val_step(model: torch.nn.Module,
     Validates the model performance for one epoch
 
     Args: 
-        model: The PyTorch model to train 
+        model: The PyTorch model to validate 
         val_dataloader: The Pytorch dataloader to validate the model with
-        device: Device used for training
+        device: Device used for validation
 
     Returns: 
         The validation loss and mcc score for one epoch
@@ -103,10 +105,11 @@ def val_step(model: torch.nn.Module,
             loss = output.loss 
             val_loss += loss
 
-            # Calculate the accuracy 
+            # Calculate the prediction labels 
             val_logits = output.logits 
             val_pred_label = val_logits.argmax(dim=1)
 
+            # Calculate TP, FP, TN, FN for MCC calculation
             for idx in range(len(val_pred_label)):
                 if val_pred_label[idx] == 1 and input['labels'][idx] == 1: 
                     val_tp += 1 
@@ -120,7 +123,6 @@ def val_step(model: torch.nn.Module,
     # Calculate final validation loss and accuracy
     val_loss = val_loss / len(val_dataloader)
     val_mcc = calculate_mcc(val_tp, val_tn, val_fp, val_fn)
-
     return val_loss, val_mcc 
 
 
@@ -141,13 +143,13 @@ def train(model: torch.nn.Module,
         train_dataloader: The PyTorch dataloader to train the model with 
         val_dataloader: The Pytorch dataloader to validate the model with
         optimizer: The PyTorch optimizer used to minimize the loss function
-        device: Device used for training
+        device: Device used for training/validation
         num_epochs: Number of epochs to train and validate the model for
 
     Returns: 
-        A 'results' dictionary with the train_loss, train_acc, val_loss, and val_acc over each epoch
+        A 'results' dictionary with the train_loss, train_mcc, val_loss, and val_mcc over each epoch
     '''
-    # Define the 'results' dictionary to store training and validation loss/accuracy
+    # Define the 'results' dictionary to store training and validation loss/mcc
     results = {
     'train_loss': [], 
     'train_mcc': [], 
