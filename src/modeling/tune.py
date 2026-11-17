@@ -6,6 +6,7 @@ from src.modeling.engine import train_step, val_step
 from datasets import Dataset
 from src.modeling.factory import create_model
 from sklearn.model_selection import StratifiedKFold
+from src.utils import calculate_mcc
 
 
 def objective(trial, 
@@ -17,22 +18,24 @@ def objective(trial,
               num_epochs: int, 
               batch_size: int, 
               num_workers: int,
-              num_splits: int): 
+              num_splits: int, 
+              generator: torch.Generator): 
     '''
     Define the hyperparameters that is being optimized (learning rate, weight decay, beta1, beta2, classifier dropout rate)
     as well as the model training and validation logic.
 
     Args: 
         trial: Optuna object that suggests hyperparameter values
-        config_file: The configuration file containing the model information
+        config_file: The configuration file containing model information
         train_val_dataframe: The Pandas DataFrame to train and validate the model with 
         model_name: The name of the model whose hyperparameters will be optimized
         device: Device used for training and validation
         column_name: The column name representing the chemicals in the dataset (SMILES/SELFIES)
         num_epochs: The number of epochs to train and validate the model for
         batch_size: The size of each batch of data in the training and validation dataset 
-        num_workers: Number of CPUs to dedicate to creating dataloaders
-        num_splits: Number of times to split the train_val_dataloader
+        num_workers: Number of CPUs to dedicate towards creating dataloaders
+        num_splits: Number of times to split the train_val_dataloader]
+        generator: A PyTorch pseudo-random number generator
 
 
     Returns: 
@@ -78,14 +81,12 @@ def objective(trial,
 
         # Implement required spacing to validation dataset's SELFIES strings if the model is SELFIES-TED
         if model_name == 'SELFIES-TED':
-            # Implement spacing to validation dataset
             val_dataset = val_dataset.to_pandas()
             val_dataset = space_selfies_strings(val_dataset)
             val_dataset = Dataset.from_pandas(val_dataset)
 
         # Implement required spacing to training dataset's SELFIES strings if the model is SELFIES-TED
         if model_name == 'SELFIES-TED':
-            # Implement spacing to validation dataset
             train_dataset = train_dataset.to_pandas()
             train_dataset = space_selfies_strings(train_dataset)
             train_dataset = Dataset.from_pandas(train_dataset)
@@ -103,12 +104,14 @@ def objective(trial,
         train_dataloader = create_dataloader(train_dataset, 
                                              batch_size,
                                              shuffle=True, 
+                                             generator=generator,
                                              num_workers=num_workers)
         
         # Create PyTorch validation dataloader
         val_dataloader = create_dataloader(val_dataset, 
                                            batch_size, 
                                            shuffle=False,
+                                           generator=generator,
                                            num_workers=num_workers)
 
 
@@ -123,7 +126,49 @@ def objective(trial,
 
         for epoch in tqdm(range(num_epochs)):
             # Train step
-            train_loss, train_mcc = train_step(model, train_dataloader, optimizer, device)
+            model.train()
+            train_loss = 0
+            train_tp, train_tn, train_fp, train_fn = 0, 0, 0, 0 
+            
+            # Run training loop for each batch in the training dataloader
+            for batch, input in enumerate(train_dataloader): 
+                # Put data on target device
+                input = {k: v.to(device) for k, v in input.items()} 
+            
+                # Compute a forward pass 
+                output = model(**input) 
+            
+                # Calculate the loss 
+                loss = output.loss 
+                train_loss += loss
+            
+                # Calculate the prediction labels 
+                train_logit = output.logits 
+                train_pred_label = train_logit.argmax(dim=1) 
+            
+                # Calculate TP, FP, TN, FN for MCC calculation
+                for idx in range(len(train_pred_label)):
+                    if train_pred_label[idx] == 1 and input['labels'][idx] == 1: 
+                        train_tp += 1 
+                    elif train_pred_label[idx] == 1 and input['labels'][idx] == 0: 
+                        train_fp += 1 
+                    elif train_pred_label[idx] == 0 and input['labels'][idx] == 0: 
+                        train_tn += 1 
+                    elif train_pred_label[idx] == 0 and input['labels'][idx] == 1: 
+                        train_fn += 1
+            
+                # Optimizer zero grad 
+                optimizer.zero_grad()
+            
+                # Loss backwards 
+                loss.backward()
+            
+                # Optimizer step
+                optimizer.step()
+            
+            # Calculate final training loss and mcc score
+            train_mcc = calculate_mcc(train_tp, train_tn, train_fp, train_fn)
+            train_loss = train_loss / len(train_dataloader) 
 
             # Validation step
             val_loss, val_mcc = val_step(model, val_dataloader, device)
@@ -131,34 +176,23 @@ def objective(trial,
             # Print out what's happening
             tqdm.write(f' Fold: {fold} | Epoch: {epoch} | Train Loss: {train_loss:.3f} | Train MCC: {train_mcc:.3f} | Val Loss: {val_loss:.3f} | Val MCC: {val_mcc:.3f}')
             
-            # Add results to the 'results' dictionary
+            # Add val_mcc to the 'results' dictionary
             results['val_mcc'].append(val_mcc) 
 
         # Store validation metric
         final_results['val_mcc'].append(results['val_mcc'])
 
+        # Report final validation MCC for possible trial pruning
         trial.report(results['val_mcc'][-1], fold)
         if trial.should_prune():
-            # Instantiate variables to store average metric value across folds 
-            avg_val_mcc = []
-
-            # Obtain the average metric values across folds
+            # Convert final_results into a Numpy array
             val_mcc = np.array(final_results['val_mcc'])
-                
-            for i in range(num_epochs):
-                avg_val_mcc.append(np.mean(val_mcc[:, i]))
-                
-            return avg_val_mcc[num_epochs-1]
+            
+            return np.mean(val_mcc[:, num_epochs-1])
 
 
     ### Report Final Val MCC Score ###
-    # Instantiate variables to store average metric value across folds 
-    avg_val_mcc = []
-
     # Obtain the average metric values across folds
     val_mcc = np.array(final_results['val_mcc'])
         
-    for i in range(num_epochs):
-        avg_val_mcc.append(np.mean(val_mcc[:, i]))
-        
-    return avg_val_mcc[num_epochs-1]
+    return np.mean(val_mcc[:, num_epochs-1])
