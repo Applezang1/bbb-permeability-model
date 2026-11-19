@@ -11,11 +11,11 @@ def save_model(model_parameters,
 
     Args: 
         model_parameters: The model parameters needed to be saved   
-        model_name: The name of the model for file naming during model saving    
+        model_name: The name of the model    
     '''
     
     # Create model save path
-    model_save_path = Path('saved_models')
+    model_save_path = Path('checkpoints')
     if model_save_path.is_dir(): 
         print(f'Path already exists')
     else: 
@@ -80,7 +80,7 @@ def test_on_testing_set(model: torch.nn.Module,
                         device: torch.device, 
                         test_dataloader: torch.utils.data.DataLoader):
     '''
-    Test model performance on the test dataloader
+    Test model performance on the input dataloader
 
     Args: 
         model: The PyTorch model to test 
@@ -117,7 +117,7 @@ def test_on_testing_set(model: torch.nn.Module,
 
             # Calculate testing mcc score 
             test_logit = output.logits 
-            test_pred_label = test_logit.argmax(dim=1) 
+            test_pred_label = test_logit.argmax(dim=1)
 
             # Store test logits and model prediction labels
             for logits in test_logit:
@@ -337,7 +337,7 @@ def count_classes(pred_dataframe: pd.DataFrame,
                   pred_smi_column: str):
     '''
     Determines the SMILES that were filtered out of the testing dataframe for prediction and
-    calculates the BBB+ and BBB- count of the filtered SMILES list
+    their respective class
     
     Args: 
         pred_dataframe: The dataframe containing the curated SMILES and its respective label
